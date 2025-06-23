@@ -1,3 +1,4 @@
+from werkzeug.security import generate_password_hash
 from app.models.user import User
 from app.utils.logger import logger
 
@@ -5,7 +6,15 @@ user_model = User()
 
 def create_user(data):
     try:
-        return user_model.add(data['name'], data['email'], data['role'])
+        password_hash = generate_password_hash(data['password'])
+        return user_model.add(
+            name=data['name'],
+            email=data['email'],
+            phone=data['phone'],
+            department=data['department'],
+            role=data['role'],
+            password_hash=password_hash
+        )
     except Exception as e:
         logger.error(f"Create user failed: {e}")
         raise
@@ -16,8 +25,34 @@ def get_users():
 def search_users(name):
     return user_model.search(name)
 
-def update_user(user_id, data):
-    user_model.update(user_id, data['name'], data['email'], data['role'])
+def update_user(employee_id, data):
+    user_model.update(
+        employee_id,
+        name=data['name'],
+        email=data['email'],
+        phone=data['phone'],
+        department=data['department'],
+        role=data['role'],
+        password_hash=generate_password_hash(data['password']) if 'password' in data else None,
+        status=data.get('status')
+    )
 
-def delete_user(user_id):
-    user_model.delete(user_id)
+
+def delete_user(employee_id):
+    user_model.delete(employee_id)
+
+def get_by_email(email):
+    return user_model.get_by_email(email)
+
+def get_by_employee_id(employee_id):
+    return user_model.get_by_employee_id(employee_id)
+
+def store_reset_token(employee_id, token):
+    user_model.save_reset_token(employee_id, token)
+
+def get_user_id_by_token(token):
+    return user_model.get_user_id_by_token(token)
+
+def update_password(employee_id, new_password):
+    password_hash = generate_password_hash(new_password)
+    user_model.update_password(employee_id, password_hash)
