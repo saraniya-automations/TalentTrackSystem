@@ -4,11 +4,16 @@ from app.schemas.user_schema import UserSchema
 from app.utils.logger import logger
 from werkzeug.security import check_password_hash
 from app.utils.token_util import generate_token
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import jwt_required
+from app.utils.auth import role_required
 
 user_bp = Blueprint('user_routes', __name__)
 user_schema = UserSchema()
 
 @user_bp.route('/users', methods=['POST'])
+@jwt_required()
+@role_required("Admin")
 def add_user():
     data = request.get_json()
 
@@ -44,6 +49,8 @@ def search_user():
 
 
 @user_bp.route('/users/<string:employee_id>', methods=['PUT'])
+@jwt_required()
+@role_required("Admin")
 def update_user(employee_id):
     data = request.get_json()
 
@@ -63,6 +70,8 @@ def update_user(employee_id):
 
 
 @user_bp.route('/users/<string:employee_id>', methods=['DELETE'])
+@jwt_required()
+@role_required("Admin")
 def delete_user(employee_id):
     try:
         user_service.delete_user(employee_id)
@@ -80,12 +89,15 @@ def login():
     user = user_service.get_by_email(email)
     if not user or not check_password_hash(user['password_hash'], password):
         return jsonify({'error': 'Invalid email or password'}), 401
+    
+    access_token = create_access_token(identity={"email": user['email'], "role": user['role']})
 
     return jsonify({
         'message': 'Login successful',
         'employee_id': user['employee_id'],
         'role': user['role'],
-        'status': user['status']
+        'status': user['status'],
+        'access_token': access_token
     }), 200
 
 
