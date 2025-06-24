@@ -27,12 +27,21 @@ def add_user():
 @user_bp.route('/users', methods=['GET'])
 def get_all_users():
     users = user_service.get_users()
+    for user in users:
+        user.pop('password_hash', None)
     return jsonify(users)
 
 @user_bp.route('/users/search', methods=['GET'])
 def search_user():
     name = request.args.get('name', '')
-    return jsonify(user_service.search_users(name))
+    users = user_service.search_users(name)
+    
+    # Remove password_hash from each user dict
+    for user in users:
+        user.pop('password_hash', None)
+    
+    return jsonify(users)
+
 
 @user_bp.route('/users/<string:employee_id>', methods=['PUT'])
 def update_user(employee_id):
@@ -95,7 +104,7 @@ def forgot_password():
     # Simulate email (just return token in response for now)
     return jsonify({
         'message': 'Password reset token generated',
-        'reset_token': token  # 🔒 In production, don’t expose this
+        'reset_token': token  
     }), 200
 
 @user_bp.route('/reset-password', methods=['POST'])

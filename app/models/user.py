@@ -98,9 +98,12 @@ class User:
                 tuple(values)
             )
 
-    def delete(self, user_id):
+    def delete(self, employee_id):
         with self.conn:
-            self.conn.execute('UPDATE users SET status = ? WHERE id = ?', ('Inactive', user_id))
+            self.conn.execute(
+            'UPDATE users SET status = ?, updated_at = ? WHERE employee_id = ?',
+            ('Inactive', datetime.now().isoformat(), employee_id)
+        )
 
     # ✅ These were outside the class — moved inside
     def save_reset_token(self, user_id, token):
