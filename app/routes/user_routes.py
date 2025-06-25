@@ -7,6 +7,7 @@ from app.utils.token_util import generate_token
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import jwt_required
 from app.utils.auth import role_required
+import sqlite3
 
 user_bp = Blueprint('user_routes', __name__)
 user_schema = UserSchema()
@@ -16,7 +17,7 @@ user_schema = UserSchema()
 @role_required("Admin")
 def add_user():
     data = request.get_json()
-
+    
     if not data:
         return jsonify({'error': 'No input data provided'}), 400
 
@@ -24,10 +25,15 @@ def add_user():
         return jsonify({'errors': errors}), 400
 
     try:
-        employee_id = user_service.create_user(data)
-        return jsonify({'message': 'User created', 'id': employee_id}), 201
+        result = user_service.create_user(data)
+        if isinstance(result, tuple):
+            return jsonify({'message': 'User created', 'id': result[0]["employee_id"]}), result[1]
+        return jsonify({'message': 'User created', 'id': result['employee_id']}), 201
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'User Creation Failed'}), 400
+    
+ 
+
 
 @user_bp.route('/users', methods=['GET'])
 def get_all_users():
