@@ -1,5 +1,11 @@
 2025-06-18 06:20:43,360 - INFO - Flask App Initialized.
 2025-06-18 06:20:46,230 - INFO - Flask App Initialized.
+2025-06-25 00:59:30,833 - INFO - Flask App Initialized.
+2025-06-25 00:59:31,932 - INFO - Flask App Initialized.
+2025-06-25 01:23:23,706 - INFO - Flask App Initialized.
+2025-06-25 01:23:24,618 - INFO - Flask App Initialized.
+2025-06-25 01:24:34,610 - INFO - Flask App Initialized.
+2025-06-25 01:24:35,373 - INFO - Flask App Initialized.
 2025-06-24 13:13:26,528 - ERROR - Create user failed: UNIQUE constraint failed: users.email
 2025-06-24 13:31:41,837 - ERROR - Create user failed: UNIQUE constraint failed: users.email
 2025-06-24 13:32:22,223 - ERROR - Create user failed: UNIQUE constraint failed: users.email
