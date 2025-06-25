@@ -1,39 +1,12 @@
 import sqlite3
 from app.config import Config
 from datetime import datetime
+from app.models.database import Database
 
-class User:
+class User(Database):
     def __init__(self):
-        self.conn = sqlite3.connect(Config.DATABASE, check_same_thread=False)
-        self.conn.row_factory = sqlite3.Row
-        self.create_table()
-
-    def create_table(self):
-        with self.conn:
-            self.conn.execute('''
-                CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY,
-                    employee_id TEXT UNIQUE NOT NULL,
-                    name TEXT NOT NULL,
-                    email TEXT UNIQUE NOT NULL,
-                    phone TEXT,
-                    department TEXT,
-                    role TEXT NOT NULL,
-                    password_hash TEXT NOT NULL,
-                    status TEXT DEFAULT 'Active',
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
-            self.conn.execute('''
-                CREATE TABLE IF NOT EXISTS reset_tokens (
-                    user_id INTEGER,
-                    token TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY(user_id) REFERENCES users(id)
-                )
-            ''')
-
+        super().__init__()
+    
     def generate_employee_id(self):
         cursor = self.conn.execute('SELECT MAX(id) FROM users')
         row = cursor.fetchone()
@@ -98,9 +71,17 @@ class User:
                 tuple(values)
             )
 
-    def delete(self, user_id):
+    def delete(self, employee_id):
         with self.conn:
-            self.conn.execute('UPDATE users SET status = ? WHERE id = ?', ('Inactive', user_id))
+            self.conn.execute(
+            'UPDATE users SET status = ?, updated_at = ? WHERE employee_id = ?',
+            ('Inactive', datetime.now().isoformat(), employee_id)
+        )
+
+    def hard_delete_by_email(self, email):
+        with self.conn:
+            self.conn.execute("DELETE FROM users WHERE email = ?", (email,))
+
 
     # ✅ These were outside the class — moved inside
     def save_reset_token(self, user_id, token):
