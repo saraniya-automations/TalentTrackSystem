@@ -114,8 +114,6 @@ def test_create_user_as_admin(client):
     if (user := user_model.get_by_email("test_user@example.com")):
         user_model.hard_delete_by_email(user['employee_id'])
 
-
-
 def test_delete_user_as_admin(client):
     # Login as admin
     login_res = client.post('/login', json={

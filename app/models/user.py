@@ -1,68 +1,12 @@
 import sqlite3
 from app.config import Config
 from datetime import datetime
+from app.models.database import Database
 
-class User:
+class User(Database):
     def __init__(self):
-        self.conn = sqlite3.connect(Config.DATABASE, check_same_thread=False)
-        self.conn.row_factory = sqlite3.Row
-        self.create_table()
-
-    # def create_table(self):
-    #     with self.conn:
-    #         self.conn.execute('''
-    #             CREATE TABLE IF NOT EXISTS users (
-    #                 id INTEGER PRIMARY KEY,
-    #                 employee_id TEXT UNIQUE NOT NULL,
-    #                 name TEXT NOT NULL,
-    #                 email TEXT UNIQUE NOT NULL,
-    #                 phone TEXT,
-    #                 department TEXT,
-    #                 role TEXT NOT NULL,
-    #                 password_hash TEXT NOT NULL,
-    #                 status TEXT DEFAULT 'Active',
-    #                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    #                 updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    #             )
-    #         ''')
-    #         self.conn.execute('''
-    #             CREATE TABLE IF NOT EXISTS reset_tokens (
-    #                 user_id INTEGER,
-    #                 token TEXT,
-    #                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    #                 FOREIGN KEY(user_id) REFERENCES users(id)
-    #             )
-    #         ''')
-
-    def create_table(self):
-        if self.conn.execute("PRAGMA database_list").fetchone()[2] == ":memory:":
-            # Drop tables if testing
-            self.conn.execute('DROP TABLE IF EXISTS users')
-            self.conn.execute('DROP TABLE IF EXISTS reset_tokens')
-
-        with self.conn:
-            self.conn.execute('''CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY,
-                employee_id TEXT UNIQUE NOT NULL,
-                name TEXT NOT NULL,
-                email TEXT UNIQUE NOT NULL,
-                phone TEXT,
-                department TEXT,
-                role TEXT NOT NULL,
-                password_hash TEXT NOT NULL,
-                status TEXT DEFAULT 'Active',
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )''')
-
-            self.conn.execute('''CREATE TABLE IF NOT EXISTS reset_tokens (
-                user_id INTEGER,
-                token TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(user_id) REFERENCES users(id)
-            )''')
-
-
+        super().__init__()
+    
     def generate_employee_id(self):
         cursor = self.conn.execute('SELECT MAX(id) FROM users')
         row = cursor.fetchone()
