@@ -25,12 +25,17 @@ def add_user():
         return jsonify({'errors': errors}), 400
 
     try:
+        # result = user_service.create_user(data)
         result = user_service.create_user(data)
-        if isinstance(result, tuple):
-            return jsonify({'message': 'User created', 'id': result[0]["employee_id"]}), result[1]
-        return jsonify({'message': 'User created', 'id': result['employee_id']}), 201
+        # if isinstance(result, dict):
+        #     return jsonify(result), 201
+        # if isinstance(result, tuple):
+        #     return jsonify({'message': 'User created', 'employee_id': result[0]["employee_id"]}),201
+        # , result[1]
+        # return jsonify({'message': 'User created', 'id': result['employee_id']}), 201
+        return jsonify({'message': 'User created','id':result[0][1]}), 201
     except Exception as e:
-        return jsonify({'error': 'User Creation Failed'}), 400
+        return jsonify(result), 400
     
  
 

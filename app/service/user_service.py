@@ -8,10 +8,10 @@ user_model = User()
 def create_user(data):
     try:
         if user_model.get_by_email(data['email']):
-            return {"errors": {"email": ["User with this email already exists."]}}, 400
+            return {"error": "User with this email already exists."}, 400
         
         password_hash = generate_password_hash(data['password'])
-        employee_id = user_model.add(
+        employee = user_model.add(
             name=data['name'],
             email=data['email'],
             phone=data['phone'],
@@ -19,7 +19,8 @@ def create_user(data):
             role=data['role'],
             password_hash=password_hash
         )
-        return {"employee_id": employee_id}, 201
+        # return {"employee": employee}, 201
+        return employee, 201
     except sqlite3.IntegrityError as e:
         logger.error(f"Create user failed due to IntegrityError: {e}")
         return {"error": "Email already exists"}, 400 
