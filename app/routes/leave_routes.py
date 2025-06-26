@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.service.leave_service import LeaveService
-from app.service import manager_services
+from app.service import manager_service
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth import role_required
 
@@ -49,7 +49,7 @@ def update_leave_status(leave_id):
         return jsonify({'error': 'Invalid status. Must be "Approved" or "Rejected".'}), 400
 
     try:
-        result = manager_services.update_leave_status(leave_id, status)
+        result = manager_service.update_leave_status(leave_id, status)
         return jsonify(result), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -61,5 +61,5 @@ def update_leave_status(leave_id):
 def get_pending_leaves():
     identity = get_jwt_identity()
     manager_id = identity['employee_id']
-    pending = manager_services.get_pending_leaves(manager_id)
+    pending = manager_service.get_pending_leaves(manager_id)
     return jsonify(pending), 200

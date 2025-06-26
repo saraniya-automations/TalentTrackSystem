@@ -18,3 +18,7 @@
 2025-06-25 04:03:10,126 - ERROR - Create user failed due to IntegrityError: UNIQUE constraint failed: users.email
 2025-06-25 04:03:38,227 - ERROR - Create user failed due to IntegrityError: UNIQUE constraint failed: users.email
 2025-06-25 04:05:30,157 - ERROR - Create user failed due to IntegrityError: UNIQUE constraint failed: users.email
+2025-06-27 01:24:41,038 - INFO - Flask App Initialized.
+2025-06-27 01:24:41,700 - INFO - Flask App Initialized.
+2025-06-27 01:26:14,464 - INFO - Flask App Initialized.
+2025-06-27 01:26:15,153 - INFO - Flask App Initialized.
