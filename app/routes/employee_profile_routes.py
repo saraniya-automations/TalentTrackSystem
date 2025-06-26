@@ -28,8 +28,8 @@ def update_profile(employee_id):
     if existing_profile := employee_profile_service.get_profile_by_employee_id(
         employee_id
     ):
-        employee_profile_service.update_profile(user['id'], data)
+        employee_profile_service.update_profile(user['employee_id'], data)
         return jsonify({'message': 'Profile updated successfully'}), 200
     else:
-        employee_profile_service.create_profile(user['id'], data)
+        employee_profile_service.create_profile(user['employee_id'], data)
         return jsonify({'message': 'Profile created successfully'}), 201

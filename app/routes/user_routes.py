@@ -25,14 +25,22 @@ def add_user():
         return jsonify({'errors': errors}), 400
 
     try:
-        # result = user_service.create_user(data)
         result = user_service.create_user(data)
-        # if isinstance(result, dict):
-        #     return jsonify(result), 201
-        # if isinstance(result, tuple):
-        #     return jsonify({'message': 'User created', 'employee_id': result[0]["employee_id"]}),201
-        # , result[1]
-        # return jsonify({'message': 'User created', 'id': result['employee_id']}), 201
+
+        dummy_profile = {
+            "middle_name": "",
+            "nickname": "",
+            "other_id": "",
+            "license_number": "",
+            "license_expiry_date": None, 
+            "nationality": "",
+            "marital_status": "",
+            "date_of_birth": None,  
+            "gender": ""
+        }
+        from app.service import employee_profile_service
+        employee_profile_service.create_profile(result[0][1], dummy_profile)
+
         return jsonify({'message': 'User created','id':result[0][1]}), 201
     except Exception as e:
         return jsonify(result), 400
@@ -142,4 +150,5 @@ def reset_password():
 
     user_service.update_password(employee_id, new_password)
     return jsonify({'message': 'Password updated successfully'}), 200
+
 

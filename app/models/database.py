@@ -61,6 +61,23 @@ class Database:
                 FOREIGN KEY(reviewer_id) REFERENCES users(employee_id)
             )''')
 
+            self.conn.execute('''CREATE TABLE IF NOT EXISTS employee_profiles (
+                id INTEGER PRIMARY KEY,
+                user_id INTEGER UNIQUE,
+                personal_details TEXT,
+                contact_details TEXT,
+                emergency_contacts TEXT,
+                dependents TEXT,
+                job_details TEXT,
+                salary_details TEXT,
+                report_to TEXT,
+                qualifications TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(employee_id)
+            )''')
+
+
             # # Add manager_id column to users table if not exists
             # cursor = self.conn.execute('PRAGMA table_info(users)')
             # columns = [column[1] for column in cursor.fetchall()]  # Now using cursor
