@@ -50,6 +50,16 @@ class Database:
                 FOREIGN KEY(employee_id) REFERENCES users(employee_id)
             )''')  
 
+            #Leave Balance Table
+            self.conn.execute('''CREATE TABLE IF NOT EXISTS leave_balances (
+                employee_id TEXT PRIMARY KEY,
+                annual INTEGER DEFAULT 21,
+                casual INTEGER DEFAULT 10,
+                sick INTEGER DEFAULT 8,
+                maternity INTEGER DEFAULT 90,
+                FOREIGN KEY(employee_id) REFERENCES users(employee_id)
+            )''')
+
             self.conn.execute('''CREATE TABLE IF NOT EXISTS performance_reviews (
                 id INTEGER PRIMARY KEY,
                 employee_id TEXT NOT NULL,

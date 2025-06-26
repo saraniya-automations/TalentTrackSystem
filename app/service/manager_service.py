@@ -19,3 +19,6 @@ def get_performance_reviews(employee_id):
 
 def get_leave_history(employee_id):
     return manager_model.get_leave_history(employee_id)
+
+def update_leave_status(leave_id, status):
+    return manager_model.update_leave_status(leave_id, status) #For leave feature
