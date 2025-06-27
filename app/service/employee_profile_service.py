@@ -11,3 +11,6 @@ def get_profile_by_employee_id(employee_id):
 
 def update_profile(user_id, data):
     profile_model.update_profile(user_id, data)
+
+def get_all_profiles(limit=50, offset=0,key=''):
+    return profile_model.get_all(limit, offset,key)

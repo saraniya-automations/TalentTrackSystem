@@ -58,6 +58,9 @@ def update_user(employee_id, data):
 def delete_user(employee_id):
     user_model.delete(employee_id)
 
+def hard_delete_user(employee_id):
+    user_model.hard_delete_by_employee_id(employee_id)
+
 def get_by_email(email):
     return user_model.get_by_email(email)
 
