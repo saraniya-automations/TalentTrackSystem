@@ -2,10 +2,11 @@ import json
 import pytest
 from app import create_app
 from app.models.user import User
-from app.models.database import Database
 from app.models.employee_profile import EmployeeProfile
 from werkzeug.security import generate_password_hash
 import uuid 
+from app.models.database import Database
+
 
 @pytest.fixture
 def client():
@@ -474,8 +475,6 @@ def test_profile_deleted_when_user_deleted(client):
     assert profile is None, "Profile should be deleted when user is deleted"
 
 
-
-
 def test_reset_password_invalid_token(client):
     payload = {
         "token": "nonexistent-token",
@@ -484,7 +483,6 @@ def test_reset_password_invalid_token(client):
     res = client.post("/reset-password", json=payload)
     assert res.status_code == 400
     assert "error" in res.get_json()
-
 def test_apply_leave_and_check_balance(client):
     user_model = User()
     db = Database()
