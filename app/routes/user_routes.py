@@ -28,15 +28,15 @@ def add_user():
         result = user_service.create_user(data)
 
         dummy_profile = {
-            "middle_name": "",
-            "nickname": "",
-            "other_id": "",
-            "license_number": "",
+            "middle_name": "middle name",
+            "nickname": "nick name",
+            "other_id": "other id",
+            "license_number": "licence number",
             "license_expiry_date": None, 
-            "nationality": "",
-            "marital_status": "",
+            "nationality": "new zealand",
+            "marital_status": "married",
             "date_of_birth": None,  
-            "gender": ""
+            "gender": "male"
         }
         from app.service import employee_profile_service
         employee_profile_service.create_profile(result[0][1], dummy_profile)
@@ -88,12 +88,22 @@ def update_user(employee_id):
         return jsonify({'error': str(e)}), 500
 
 
+@user_bp.route('/users/<string:employee_id>/status', methods=['PUT'])
+@jwt_required()
+@role_required("Admin")
+def user_status(employee_id):
+    try:
+        user_service.delete_user(employee_id)
+        return jsonify({'message': 'User deleted'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 @user_bp.route('/users/<string:employee_id>', methods=['DELETE'])
 @jwt_required()
 @role_required("Admin")
-def delete_user(employee_id):
+def hard_delete_user(employee_id):
     try:
-        user_service.delete_user(employee_id)
+        user_service.hard_delete_user(employee_id)
         return jsonify({'message': 'User deleted'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500

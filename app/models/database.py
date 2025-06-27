@@ -10,10 +10,12 @@ class Database:
         self.create_table()
 
     def create_table(self):
+        self.conn.execute("PRAGMA foreign_keys = ON")
         if self.conn.execute("PRAGMA database_list").fetchone()[2] == ":memory:":
             # Drop tables if testing
             self.conn.execute('DROP TABLE IF EXISTS users')
             self.conn.execute('DROP TABLE IF EXISTS reset_tokens')
+            
 
         with self.conn:
             self.conn.execute('''CREATE TABLE IF NOT EXISTS users (
@@ -63,7 +65,7 @@ class Database:
 
             self.conn.execute('''CREATE TABLE IF NOT EXISTS employee_profiles (
                 id INTEGER PRIMARY KEY,
-                user_id INTEGER UNIQUE,
+                user_id TEXT UNIQUE NOT NULL,
                 personal_details TEXT,
                 contact_details TEXT,
                 emergency_contacts TEXT,
@@ -74,7 +76,7 @@ class Database:
                 qualifications TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(employee_id)
+                FOREIGN KEY (user_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
 
 
