@@ -13,9 +13,12 @@ class Database:
         self.conn.execute("PRAGMA foreign_keys = ON")
         if self.conn.execute("PRAGMA database_list").fetchone()[2] == ":memory:":
             # Drop tables if testing
-            self.conn.execute('DROP TABLE IF EXISTS users')
+            self.conn.execute('DROP TABLE IF EXISTS performance_reviews')
+            self.conn.execute('DROP TABLE IF EXISTS employee_profiles')
+            self.conn.execute('DROP TABLE IF EXISTS leave_balances')
+            self.conn.execute('DROP TABLE IF EXISTS leaves')
             self.conn.execute('DROP TABLE IF EXISTS reset_tokens')
-            
+            self.conn.execute('DROP TABLE IF EXISTS users')         
 
         with self.conn:
             self.conn.execute('''CREATE TABLE IF NOT EXISTS users (

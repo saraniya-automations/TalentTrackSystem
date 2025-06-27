@@ -2,6 +2,7 @@ import json
 import pytest
 from app import create_app
 from app.models.user import User
+from app.models.database import Database
 from app.models.employee_profile import EmployeeProfile
 from werkzeug.security import generate_password_hash
 import uuid 
@@ -484,5 +485,76 @@ def test_reset_password_invalid_token(client):
     assert res.status_code == 400
     assert "error" in res.get_json()
 
+def test_apply_leave_and_check_balance(client):
+    user_model = User()
+    db = Database()
+
+    # Clean up if exists
+    if user_model.get_by_email("leaveuser@example.com"):
+        user_model.hard_delete_by_email("leaveuser@example.com")
+    if user_model.get_by_email("adminleave@example.com"):
+        user_model.hard_delete_by_email("adminleave@example.com")
+
+    # Create Admin
+    admin_id, _ = user_model.add(
+        name="Admin User",
+        email="adminleave@example.com",
+        phone="9999999999",
+        department="HR",
+        role="Admin",
+        password_hash=generate_password_hash("AdminPass123")
+    )
+
+    # Create Employee
+    emp_id, emp_employee_id = user_model.add(
+        name="Leave User",
+        email="leaveuser@example.com",
+        phone="1112223333",
+        department="IT",
+        role="Employee",
+        password_hash=generate_password_hash("EmpPass123")
+    )
+
+    # Add leave balance
+    db.conn.execute('''
+        INSERT INTO leave_balances (employee_id, annual, casual, sick, maternity)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (emp_employee_id, 5, 3, 2, 90))
+    db.conn.commit()
+
+    # Login as Employee
+    login_res = client.post('/login', json={
+        "email": "leaveuser@example.com",
+        "password": "EmpPass123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    # Check balance before leave
+    balance_res = client.get('/leave/balance',
+                             headers={"Authorization": f"Bearer {token}"})
+    assert balance_res.status_code == 200
+    balance = balance_res.get_json()
+    assert balance['annual'] == 5
+
+    # Apply 2-day annual leave
+    apply_res = client.post('/leave/apply',
+                             json={
+                                 "leave_type": "annual",
+                                 "start_date": "2025-07-01",
+                                 "end_date": "2025-07-02",
+                                 "reason": "Personal"
+                             },
+                             headers={"Authorization": f"Bearer {token}"})
+    assert apply_res.status_code == 201
+    assert apply_res.get_json()['message'] == "Leave applied successfully"
+    assert apply_res.get_json()['days'] == 2
+
+    # Check balance after leave
+    balance_after = client.get('/leave/balance',
+                               headers={"Authorization": f"Bearer {token}"})
+    assert balance_after.status_code == 200
+    updated = balance_after.get_json()
+    assert updated['annual'] == 3  # 5 - 2 = 3
 
 

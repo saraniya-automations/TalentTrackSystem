@@ -27,10 +27,10 @@ class Manager(Database):
 
             #Leave type to column mapping
             column_map = {
-                'Annual Leaves': 'annual_leaves',
-                'Casual Leaves': 'casual_leaves',
-                'Sick Leaves': 'sick_leaves',
-                'Maternity Leave': 'maternity_leave'
+                'annual': 'annual',
+                'casual': 'casual',
+                'sick': 'sick',
+                'maternity': 'maternity'
             }
             column_name = column_map.get(leave['leave_type'])
             if not column_name:

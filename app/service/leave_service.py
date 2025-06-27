@@ -13,10 +13,10 @@ class LeaveService(Database):
 
         #Normalize leave type to lowercase column name (e.g., "Annual Leaves" → "annual_leaves")
         column_map = {
-            'Annual Leaves': 'annual_leaves',
-            'Casual Leaves': 'casual_leaves',
-            'Sick Leaves': 'sick_leaves',
-            'Maternity Leave': 'maternity_leave'
+            'annual': 'annual',
+            'casual': 'casual',
+            'sick': 'sick',
+            'maternity': 'maternity'
         }
         column_name = column_map.get(leave_type)
         if not column_name:
@@ -39,6 +39,12 @@ class LeaveService(Database):
             INSERT INTO leaves (employee_id, leave_type, start_date, end_date, reason)
             VALUES (?, ?, ?, ?, ?)
         ''', (employee_id, leave_type, start_date, end_date, reason))
+
+        self.conn.execute(f'''
+            UPDATE leave_balances
+            SET {column_name} = {column_name} - ?
+            WHERE employee_id = ?
+        ''', (leave_days, employee_id))
 
         self.conn.commit()
         return {"message": "Leave applied successfully", "days": leave_days}, 201
