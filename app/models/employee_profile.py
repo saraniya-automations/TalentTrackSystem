@@ -137,5 +137,19 @@ class EmployeeProfile(Database):
         ))
         self.conn.commit()
 
-
-   
+    def get_all(self, limit, offset, key=''):
+        query = '''
+            SELECT ep.*, u.employee_id FROM employee_profiles ep
+            JOIN users u ON ep.user_id = u.employee_id
+        '''
+        params = []
+        
+        if key:
+            query += ' WHERE u.employee_id LIKE ?'
+            params.append(f'%{key}%')
+        
+        query += ' LIMIT ? OFFSET ?'
+        params.extend([limit, offset])
+        
+        cursor = self.conn.execute(query, tuple(params))
+        return [dict(row) for row in cursor.fetchall()]

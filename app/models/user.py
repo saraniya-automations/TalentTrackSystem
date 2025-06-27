@@ -82,6 +82,10 @@ class User(Database):
         with self.conn:
             self.conn.execute("DELETE FROM users WHERE email = ?", (email,))
 
+    def hard_delete_by_employee_id(self, employee_id):
+        with self.conn:
+            self.conn.execute("DELETE FROM users WHERE employee_id = ?", (employee_id,))
+
 
     # ✅ These were outside the class — moved inside
     def save_reset_token(self, user_id, token):
