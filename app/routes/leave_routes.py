@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify
 from app.service.leave_service import LeaveService
-from app.service import manager_service
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth import role_required
 
@@ -27,6 +26,7 @@ def apply_leave():
     )
     return jsonify(result), code
 
+
 # Employee checks leave balance
 @leave_bp.route('/leave/balance', methods=['GET'])
 @jwt_required()
@@ -37,29 +37,33 @@ def get_balance():
         return jsonify({'error': 'Balance not found'}), 404
     return jsonify(balance), 200
 
-# Manager Approves or Rejects leave
+
+# Admin approves or rejects a leave request (cannot approve own)
 @leave_bp.route('/leave/<int:leave_id>/status', methods=['PUT'])
 @jwt_required()
-@role_required('Manager')
+@role_required('Admin')
 def update_leave_status(leave_id):
     data = request.get_json()
     status = data.get('status')
+    identity = get_jwt_identity()
 
     if status not in ['Approved', 'Rejected']:
         return jsonify({'error': 'Invalid status. Must be "Approved" or "Rejected".'}), 400
 
     try:
-        result = manager_service.update_leave_status(leave_id, status)
-        return jsonify(result), 200
+        result, code = leave_service.update_leave_status(leave_id, status, identity['employee_id'])
+        return jsonify(result), code
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Manager views all pending leave requests
+
+# Admin views all pending leave requests
 @leave_bp.route('/leave/pending', methods=['GET'])
 @jwt_required()
-@role_required('Manager')
+@role_required('Admin')
 def get_pending_leaves():
-    identity = get_jwt_identity()
-    manager_id = identity['employee_id']
-    pending = manager_service.get_pending_leaves(manager_id)
-    return jsonify(pending), 200
+    try:
+        pending = leave_service.get_pending_leaves()
+        return jsonify(pending), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

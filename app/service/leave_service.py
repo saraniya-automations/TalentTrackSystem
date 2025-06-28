@@ -2,6 +2,7 @@ from app.models.database import Database
 from datetime import datetime
 from dateutil.parser import parse as parse_date
 from dateutil.rrule import rrule, DAILY
+from app.models.user import User  # For checking roles and identities
 
 class LeaveService(Database):
     def __init__(self):
@@ -50,3 +51,44 @@ class LeaveService(Database):
         cursor = self.conn.execute('SELECT * FROM leave_balances WHERE employee_id = ?', (employee_id,))
         row = cursor.fetchone()
         return dict(row) if row else None
+
+    def get_leave_by_id(self, leave_id):
+        cursor = self.conn.execute('SELECT * FROM leaves WHERE id = ?', (leave_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+    def update_leave_status(self, leave_id, status, approver_id):
+        user_model = User()
+        leave = self.get_leave_by_id(leave_id)
+        approver = user_model.get_by_id(approver_id)
+
+        if not leave:
+            return {"error": "Leave request not found"}, 404
+
+        if approver["role"] != "admin":
+            return {"error": "Only admins can approve/reject leaves"}, 403
+
+        if leave["employee_id"] == approver_id:
+            return {"error": "Admins cannot approve their own leave requests"}, 403
+
+        if status not in ["Approved", "Rejected"]:
+            return {"error": "Invalid status. Must be Approved or Rejected"}, 400
+
+        self.conn.execute('''
+            UPDATE leaves SET status = ?, reviewed_by = ?, reviewed_at = ?
+            WHERE id = ?
+        ''', (status, approver_id, datetime.now().isoformat(), leave_id))
+
+        self.conn.commit()
+        return {"message": f"Leave {status.lower()} successfully."}, 200
+
+    def get_pending_leaves(self):
+        cursor = self.conn.execute('''
+            SELECT l.*, u.first_name, u.last_name, u.email
+            FROM leaves l
+            JOIN users u ON l.employee_id = u.id
+            WHERE l.status IS NULL OR l.status = 'Pending'
+            ORDER BY l.start_date ASC
+        ''')
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
