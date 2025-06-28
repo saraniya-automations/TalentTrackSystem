@@ -82,7 +82,7 @@ def test_create_user_as_admin(client):
     
 #     # Clean up created user after test
 #     if (user := user_model.get_by_email("testemployee@example.com")):
-#         user_model.hard_delete_by_email("testemployee@example.com")
+        # user_model.hard_delete_by_email("testemployee@example.com")
 
 def test_login_success(client):
     payload = {
@@ -368,6 +368,54 @@ def test_update_user_as_admin(client):
     # if (user := user_model.get_by_email("testemployee@example.com")):
     #     user_model.hard_delete_by_email("testemployee@example.com")
 
+def test_manual_attendance_request(client):
+    # Login as employee
+    login_res = client.post('/login', json={
+        "email": "testemployee@example.com",
+        "password": "Password123"
+    })
+    token = login_res.get_json()['access_token']
+
+    payload = {
+        "date": "2024-06-25",
+        "punch_in": "09:00",
+        "punch_out": "17:00",
+        "reason": "Missed punch due to network error"
+    }
+
+    res = client.post('/attendance/manual', json=payload,
+                      headers={"Authorization": f"Bearer {token}"})
+    
+    assert res.status_code == 201
+    assert res.get_json()["message"] == "Manual attendance request submitted"
+
+def test_admin_get_pending_requests(client):
+    # Login as admin
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    token = login_res.get_json()['access_token']
+
+    res = client.get('/attendance/requests', headers={"Authorization": f"Bearer {token}"})
+    
+    assert res.status_code == 200
+    assert isinstance(res.get_json(), list)
+
+def test_get_my_attendance_records(client):
+    # Login as employee
+    login_res = client.post('/login', json={
+        "email": "testemployee@example.com",
+        "password": "Password123"
+    })
+    token = login_res.get_json()['access_token']
+
+    res = client.get('/attendance/my-records?start_date=2024-06-01&end_date=2024-06-30',
+                     headers={"Authorization": f"Bearer {token}"})
+    
+    assert res.status_code == 200
+    assert isinstance(res.get_json(), list)
+
 def test_soft_delete_user_sets_status_to_inactive(client):
     # Login as admin
     login_res = client.post('/login', json={
@@ -409,6 +457,7 @@ def test_create_user_email_case_insensitive_duplicate(client):
     res = client.post('/users', json=payload,
                       headers={"Authorization": f"Bearer {token}"})
     assert res.status_code == 400
+
 
 def test_delete_user_as_admin(client):
     # Login as admin
@@ -483,6 +532,50 @@ def test_reset_password_invalid_token(client):
     res = client.post("/reset-password", json=payload)
     assert res.status_code == 400
     assert "error" in res.get_json()
+
+
+def test_admin_approve_attendance(client):
+    # Login as admin
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    token = login_res.get_json()['access_token']
+
+    # Fetch a pending request first
+    res = client.get('/attendance/requests', headers={"Authorization": f"Bearer {token}"})
+    
+    if pending := res.get_json():
+        record_id = pending[0]["id"]
+        approve_res = client.put(f"/attendance/approve/{record_id}",
+                                 headers={"Authorization": f"Bearer {token}"})
+        assert approve_res.status_code == 200
+        assert approve_res.get_json()["message"] == "Attendance request approved"
+    else:
+        pytest.skip("No pending requests to approve")
+
+
+def test_admin_reject_attendance(client):
+    # Login as admin
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    token = login_res.get_json()['access_token']
+
+    res = client.get('/attendance/requests', headers={"Authorization": f"Bearer {token}"})
+    pending = res.get_json()
+    
+    if pending:
+        record_id = pending[0]["id"]
+        reject_payload = {"rejection_reason": "Time mismatch"}
+        reject_res = client.put(f"/attendance/reject/{record_id}",
+                                json=reject_payload,
+                                headers={"Authorization": f"Bearer {token}"})
+        assert reject_res.status_code == 200
+        assert reject_res.get_json()["message"] == "Attendance request rejected"
+    # else:
+    #     pytest.skip("No pending requests to reject")
 
 
 
