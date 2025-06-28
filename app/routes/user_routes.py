@@ -119,7 +119,11 @@ def login():
     if not user or not check_password_hash(user['password_hash'], password):
         return jsonify({'error': 'Invalid email or password'}), 401
     
-    access_token = create_access_token(identity={"email": user['email'], "role": user['role']})
+    access_token = create_access_token(identity={
+        "employee_id": user['employee_id'],
+        "email": user['email'], 
+        "role": user['role']
+        })
 
     return jsonify({
         'message': 'Login successful',

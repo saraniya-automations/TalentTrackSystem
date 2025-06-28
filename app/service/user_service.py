@@ -13,7 +13,7 @@ def create_user(data):
         password_hash = generate_password_hash(data['password'])
         employee = user_model.add(
             name=data['name'],
-            email=data['email'],
+            email=data['email'].lower() ,
             phone=data['phone'],
             department=data['department'],
             role=data['role'],

@@ -79,6 +79,22 @@ class Database:
                 FOREIGN KEY (user_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
 
+            self.conn.execute('''CREATE TABLE IF NOT EXISTS attendance (
+                id INTEGER PRIMARY KEY,
+                employee_id TEXT NOT NULL,
+                punch_in TEXT NOT NULL,
+                punch_out TEXT,
+                date TEXT NOT NULL,
+                status TEXT DEFAULT 'On Time',
+                is_manual INTEGER DEFAULT 0,
+                approval_status TEXT DEFAULT 'Approved',
+                rejection_reason TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )''')
+
+            
+
 
             # # Add manager_id column to users table if not exists
             # cursor = self.conn.execute('PRAGMA table_info(users)')
