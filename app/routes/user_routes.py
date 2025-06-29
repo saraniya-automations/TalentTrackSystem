@@ -119,6 +119,9 @@ def login():
     if not user or not check_password_hash(user['password_hash'], password):
         return jsonify({'error': 'Invalid email or password'}), 401
     
+    if user['status'].lower() != 'active':
+        return jsonify({'error': 'User account is inactive'}), 403
+    
     access_token = create_access_token(identity={
         "employee_id": user['employee_id'],
         "email": user['email'], 

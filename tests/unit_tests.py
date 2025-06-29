@@ -722,3 +722,31 @@ def test_profile_deleted_when_user_deleted(client):
     profile = profile_model.get_by_employee_id(employee_id)
     assert profile is None, "Profile should be deleted when user is deleted"
 
+def test_inactive_user_cannot_login(client):
+    email = "inactiveuser1@example.com"
+    user_model = User()
+    # Clean up if exists
+    user = user_model.get_by_email(email)
+    if user:
+        user_model.hard_delete_by_email(user['email'])
+    from app.service import user_service
+    # Create user with status = Inactive via service
+    user_service.create_user({
+        "name": "Inactive User",
+        "email": email,
+        "phone": "0000000000",
+        "department": "IT",
+        "role": "Employee",
+        "password": "SomePassword123",
+        "status": "Inactive"
+    })
+
+    # Try to log in
+    login_res = client.post('/login', json={
+        "email": email,
+        "password": "SomePassword123"
+    })
+
+    assert login_res.status_code == 403
+    assert login_res.get_json()["error"] == "User account is inactive"
+
