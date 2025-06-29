@@ -39,6 +39,7 @@ class User(Database):
         return dict(row) if row else None
 
     def get_by_email(self, email):
+        email = email.lower()
         return self.get_by_field('email', email)
 
     def get_by_id(self, user_id):

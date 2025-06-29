@@ -84,7 +84,7 @@ def test_create_user_as_admin(client):
     
 #     # Clean up created user after test
 #     if (user := user_model.get_by_email("testemployee@example.com")):
-#         user_model.hard_delete_by_email("testemployee@example.com")
+        # user_model.hard_delete_by_email("testemployee@example.com")
 
 def test_login_success(client):
     payload = {
@@ -370,6 +370,54 @@ def test_update_user_as_admin(client):
     # if (user := user_model.get_by_email("testemployee@example.com")):
     #     user_model.hard_delete_by_email("testemployee@example.com")
 
+def test_manual_attendance_request(client):
+    # Login as employee
+    login_res = client.post('/login', json={
+        "email": "testemployee@example.com",
+        "password": "Password123"
+    })
+    token = login_res.get_json()['access_token']
+
+    payload = {
+        "date": "2024-06-25",
+        "punch_in": "09:00",
+        "punch_out": "17:00",
+        "reason": "Missed punch due to network error"
+    }
+
+    res = client.post('/attendance/manual', json=payload,
+                      headers={"Authorization": f"Bearer {token}"})
+    
+    assert res.status_code == 201
+    assert res.get_json()["message"] == "Manual attendance request submitted"
+
+def test_admin_get_pending_requests(client):
+    # Login as admin
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    token = login_res.get_json()['access_token']
+
+    res = client.get('/attendance/requests', headers={"Authorization": f"Bearer {token}"})
+    
+    assert res.status_code == 200
+    assert isinstance(res.get_json(), list)
+
+def test_get_my_attendance_records(client):
+    # Login as employee
+    login_res = client.post('/login', json={
+        "email": "testemployee@example.com",
+        "password": "Password123"
+    })
+    token = login_res.get_json()['access_token']
+
+    res = client.get('/attendance/my-records?start_date=2024-06-01&end_date=2024-06-30',
+                     headers={"Authorization": f"Bearer {token}"})
+    
+    assert res.status_code == 200
+    assert isinstance(res.get_json(), list)
+
 def test_soft_delete_user_sets_status_to_inactive(client):
     # Login as admin
     login_res = client.post('/login', json={
@@ -411,69 +459,6 @@ def test_create_user_email_case_insensitive_duplicate(client):
     res = client.post('/users', json=payload,
                       headers={"Authorization": f"Bearer {token}"})
     assert res.status_code == 400
-
-def test_delete_user_as_admin(client):
-    # Login as admin
-    login_res = client.post('/login', json={
-        "email": "testadmin@example.com",
-        "password": "AdminPassword123"
-    })
-    assert login_res.status_code == 200, f"Admin login failed: {login_res.get_json()}"
-    data = login_res.get_json()
-    token = data['access_token']
-
-    user_model = User()
-    user = user_model.get_by_email("testemployee@example.com")
-    assert user is not None, "Test employee user should exist for deletion test"
-    emp_id = user['employee_id']
-    response = client.delete(f'/users/{emp_id}',headers={"Authorization": f"Bearer {token}"})
-    assert response.status_code == 200
-    assert response.get_json()["message"] == "User deleted"
-
-
-def test_profile_deleted_when_user_deleted(client):
-    # Login as admin
-    login_res = client.post('/login', json={
-        "email": "testadmin@example.com",
-        "password": "AdminPassword123"
-    })
-    token = login_res.get_json()['access_token']
-
-    # Create a new user
-    new_email = "deletetest@example.com"
-    user_model = User()
-    profile_model = EmployeeProfile()
-
-    if user_model.get_by_email(new_email):
-        user_model.hard_delete_by_email(new_email)
-
-    create_res = client.post('/users',
-        json={
-            "name": "Delete Test",
-            "email": new_email,
-            "phone": "9998887777",
-            "department": "IT",
-            "role": "Employee",
-            "password": "Password123"
-        },
-        headers={"Authorization": f"Bearer {token}"}
-    )
-    assert create_res.status_code == 201
-    employee_id = create_res.get_json()["id"]
-
-    # Make sure profile was created
-    profile = profile_model.get_by_employee_id(employee_id)
-    assert profile is not None, "Profile should exist before deletion"
-
-    # Now delete the user
-    delete_res = client.delete(f'/users/{employee_id}', headers={"Authorization": f"Bearer {token}"})
-    assert delete_res.status_code == 200
-    assert delete_res.get_json()["message"] == "User deleted"
-
-    # Verify profile is deleted
-    profile = profile_model.get_by_employee_id(employee_id)
-    assert profile is None, "Profile should be deleted when user is deleted"
-
 
 def test_reset_password_invalid_token(client):
     payload = {
@@ -555,4 +540,185 @@ def test_apply_leave_and_check_balance(client):
     updated = balance_after.get_json()
     assert updated['annual'] == 3  # 5 - 2 = 3
 
+def test_admin_approve_attendance(client):
+    # Login as admin
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    token = login_res.get_json()['access_token']
+
+    # Fetch a pending request first
+    res = client.get('/attendance/requests', headers={"Authorization": f"Bearer {token}"})
+    
+    if pending := res.get_json():
+        record_id = pending[0]["id"]
+        approve_res = client.put(f"/attendance/approve/{record_id}",
+                                 headers={"Authorization": f"Bearer {token}"})
+        assert approve_res.status_code == 200
+        assert approve_res.get_json()["message"] == "Attendance request approved"
+    else:
+        pytest.skip("No pending requests to approve")
+
+
+def test_admin_reject_attendance(client):
+    # Login as admin
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    token = login_res.get_json()['access_token']
+
+    res = client.get('/attendance/requests', headers={"Authorization": f"Bearer {token}"})
+    pending = res.get_json()
+    
+    if pending:
+        record_id = pending[0]["id"]
+        reject_payload = {"rejection_reason": "Time mismatch"}
+        reject_res = client.put(f"/attendance/reject/{record_id}",
+                                json=reject_payload,
+                                headers={"Authorization": f"Bearer {token}"})
+        assert reject_res.status_code == 200
+        assert reject_res.get_json()["message"] == "Attendance request rejected"
+    # else:
+    #     pytest.skip("No pending requests to reject")
+
+
+# def test_delete_user_as_admin(client):
+    # Login as admin
+    # login_res = client.post('/login', json={
+    #     "email": "adminleave@example.com",
+    #     "password": "AdminPass123"
+    # })
+    # assert login_res.status_code == 200, f"Admin login failed: {login_res.get_json()}"
+    # data = login_res.get_json()
+    # token = data['access_token']
+
+    # # Create a new user
+    # new_email = "deletetest1@example.com"
+    # user_model = User()
+    # profile_model = EmployeeProfile()
+
+    # if user_model.get_by_email(new_email):
+    #     user_model.hard_delete_by_email(new_email)
+
+    # create_res = client.post('/users',
+    #     json={
+    #         "name": "Delete Test",
+    #         "email": new_email,
+    #         "phone": "9998887777",
+    #         "department": "IT",
+    #         "role": "Employee",
+    #         "password": "Password123"
+    #     },
+    #     headers={"Authorization": f"Bearer {token}"}
+    # )
+    # assert create_res.status_code == 201
+    # employee_id = create_res.get_json()["id"]
+
+    # # Make sure profile was created
+    # profile = profile_model.get_by_employee_id(employee_id)
+    # assert profile is not None, "Profile should exist before deletion"
+
+    # user_model = User()
+    # user = user_model.get_by_email("leaveuser@example.com")
+    # assert user is not None, "Test employee user should exist for deletion test"
+    # emp_id = user['employee_id']
+    # response = client.delete(f'/users/{emp_id}',headers={"Authorization": f"Bearer {token}"})
+    # assert response.status_code == 200
+    # assert response.get_json()["message"] == "User deleted"
+
+def test_delete_user_as_admin(client):
+    # Login as admin
+    login_res = client.post('/login', json={
+        "email": "adminleave@example.com",
+        "password": "AdminPass123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    # Create and then delete the same user
+    new_email = "deletetest1@example.com"
+    user_model = User()
+    profile_model = EmployeeProfile()
+
+    # Cleanup if test failed previously
+    if user_model.get_by_email(new_email):
+        user_model.hard_delete_by_email(new_email)
+
+    # Create new user
+    create_res = client.post('/users',
+        json={
+            "name": "Delete Test",
+            "email": new_email,
+            "phone": "9998887777",
+            "department": "IT",
+            "role": "Employee",
+            "password": "Password123"
+        },
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert create_res.status_code == 201
+    employee_id = create_res.get_json()["id"]
+
+    # Verify profile exists
+    profile = profile_model.get_by_employee_id(employee_id)
+    assert profile is not None
+
+    # Delete the user we just created
+    response = client.delete(f'/users/{employee_id}',
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 200
+    assert response.get_json()["message"] == "User deleted"
+
+    # Verify user is really deleted
+    user = user_model.get_by_email(new_email)
+    assert user is None
+
+def test_profile_deleted_when_user_deleted(client):
+     # Login as admin
+    login_res = client.post('/login', json={
+        "email": "adminleave@example.com",
+        "password": "AdminPass123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    # Create and then delete the same user
+    new_email = "deletetest1@example.com"
+    user_model = User()
+    profile_model = EmployeeProfile()
+
+    # Cleanup if test failed previously
+    if user_model.get_by_email(new_email):
+        user_model.hard_delete_by_email(new_email)
+
+    # Create new user
+    create_res = client.post('/users',
+        json={
+            "name": "Delete Test",
+            "email": new_email,
+            "phone": "9998887777",
+            "department": "IT",
+            "role": "Employee",
+            "password": "Password123"
+        },
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert create_res.status_code == 201
+    employee_id = create_res.get_json()["id"]
+
+#     # Make sure profile was created
+    profile = profile_model.get_by_employee_id(employee_id)
+    assert profile is not None, "Profile should exist before deletion"
+
+    # Now delete the user
+    delete_res = client.delete(f'/users/{employee_id}', headers={"Authorization": f"Bearer {token}"})
+    assert delete_res.status_code == 200
+    assert delete_res.get_json()["message"] == "User deleted"
+
+    # Verify profile is deleted
+    profile = profile_model.get_by_employee_id(employee_id)
+    assert profile is None, "Profile should be deleted when user is deleted"
 

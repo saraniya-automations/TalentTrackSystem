@@ -37,7 +37,7 @@ class Database:
                 user_id INTEGER,
                 token TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(user_id) REFERENCES users(id)
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
             )''')
 
             self.conn.execute('''CREATE TABLE IF NOT EXISTS leaves (
@@ -50,7 +50,7 @@ class Database:
                 status TEXT DEFAULT 'Pending',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(employee_id) REFERENCES users(employee_id)
+                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')  
 
             #Leave Balance Table
@@ -60,7 +60,7 @@ class Database:
                 casual INTEGER DEFAULT 10,
                 sick INTEGER DEFAULT 8,
                 maternity INTEGER DEFAULT 90,
-                FOREIGN KEY(employee_id) REFERENCES users(employee_id)
+                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
 
             self.conn.execute('''CREATE TABLE IF NOT EXISTS performance_reviews (
@@ -70,8 +70,8 @@ class Database:
                 comments TEXT NOT NULL,
                 reviewer_id TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(employee_id) REFERENCES users(employee_id),
-                FOREIGN KEY(reviewer_id) REFERENCES users(employee_id)
+                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE,
+                FOREIGN KEY(reviewer_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
 
             self.conn.execute('''CREATE TABLE IF NOT EXISTS employee_profiles (
@@ -89,6 +89,23 @@ class Database:
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
+
+            self.conn.execute('''CREATE TABLE IF NOT EXISTS attendance (
+                id INTEGER PRIMARY KEY,
+                employee_id TEXT NOT NULL,
+                punch_in TEXT NOT NULL,
+                punch_out TEXT,
+                date TEXT NOT NULL,
+                status TEXT DEFAULT 'On Time',
+                is_manual INTEGER DEFAULT 0,
+                approval_status TEXT DEFAULT 'Approved',
+                rejection_reason TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
+            )''')
+
+            
 
 
             # # Add manager_id column to users table if not exists

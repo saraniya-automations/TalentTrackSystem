@@ -19,6 +19,7 @@
 from flask import Flask
 from app.routes.user_routes import user_bp
 from app.routes.employee_profile_routes import profile_bp
+from app.routes.attendance_routes import attendance_bp
 from app.routes.leave_routes import leave_bp #Added for leave
 from app.utils.logger import logger
 from app.config import Config
@@ -39,6 +40,7 @@ def create_app(testing=False):
     jwt.init_app(app)
     app.register_blueprint(user_bp)
     app.register_blueprint(profile_bp)
+    app.register_blueprint(attendance_bp)
     app.register_blueprint(leave_bp) #Added for leave feature
     logger.info("Flask App Initialized.")
 
