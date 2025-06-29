@@ -11,11 +11,12 @@ class Database:
 
     def create_table(self):
         self.conn.execute("PRAGMA foreign_keys = ON")
+
         if self.conn.execute("PRAGMA database_list").fetchone()[2] == ":memory:":
-            # Drop tables if testing
-            self.conn.execute('DROP TABLE IF EXISTS users')
-            self.conn.execute('DROP TABLE IF EXISTS reset_tokens')
-            
+            tables = ['performance_reviews', 'employee_profiles', 'leave_balances',
+                  'leaves', 'reset_tokens', 'users']
+            for table in tables:
+                self.conn.execute(f'DROP TABLE IF EXISTS {table}')
 
         with self.conn:
             self.conn.execute('''CREATE TABLE IF NOT EXISTS users (
@@ -36,7 +37,7 @@ class Database:
                 user_id INTEGER,
                 token TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(user_id) REFERENCES users(id)
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
             )''')
 
             self.conn.execute('''CREATE TABLE IF NOT EXISTS leaves (
@@ -49,8 +50,18 @@ class Database:
                 status TEXT DEFAULT 'Pending',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(employee_id) REFERENCES users(employee_id)
+                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')  
+
+            #Leave Balance Table
+            self.conn.execute('''CREATE TABLE IF NOT EXISTS leave_balances (
+                employee_id TEXT PRIMARY KEY,
+                annual INTEGER DEFAULT 21,
+                casual INTEGER DEFAULT 10,
+                sick INTEGER DEFAULT 8,
+                maternity INTEGER DEFAULT 90,
+                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
+            )''')
 
             self.conn.execute('''CREATE TABLE IF NOT EXISTS performance_reviews (
                 id INTEGER PRIMARY KEY,
@@ -59,8 +70,8 @@ class Database:
                 comments TEXT NOT NULL,
                 reviewer_id TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(employee_id) REFERENCES users(employee_id),
-                FOREIGN KEY(reviewer_id) REFERENCES users(employee_id)
+                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE,
+                FOREIGN KEY(reviewer_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
 
             self.conn.execute('''CREATE TABLE IF NOT EXISTS employee_profiles (
@@ -90,7 +101,8 @@ class Database:
                 approval_status TEXT DEFAULT 'Approved',
                 rejection_reason TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
 
             

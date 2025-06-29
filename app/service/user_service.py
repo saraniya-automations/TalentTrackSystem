@@ -2,6 +2,7 @@ from werkzeug.security import generate_password_hash
 from app.models.user import User
 from app.utils.logger import logger
 import sqlite3
+from app.models.database import Database  # ✅ required for leave balance
 
 user_model = User()
 
@@ -19,6 +20,12 @@ def create_user(data):
             role=data['role'],
             password_hash=password_hash
         )
+
+        # ✅ After creating user, initialize leave balances
+        db = Database()
+        db.conn.execute('INSERT INTO leave_balances (employee_id) VALUES (?)', (employee[1],))
+        db.conn.commit()
+        
         # return {"employee": employee}, 201
         return employee, 201
     except sqlite3.IntegrityError as e:
