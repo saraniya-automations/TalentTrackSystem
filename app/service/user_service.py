@@ -12,13 +12,15 @@ def create_user(data):
             return {"error": "User with this email already exists."}, 400
         
         password_hash = generate_password_hash(data['password'])
+        status = data.get('status', 'Active')
         employee = user_model.add(
             name=data['name'],
             email=data['email'].lower() ,
             phone=data['phone'],
             department=data['department'],
             role=data['role'],
-            password_hash=password_hash
+            password_hash=password_hash,
+            status=status
         )
 
         # ✅ After creating user, initialize leave balances
