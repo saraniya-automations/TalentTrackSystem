@@ -24,6 +24,7 @@ from app.routes.leave_routes import leave_bp #Added for leave
 from app.utils.logger import logger
 from app.config import Config
 from flask_jwt_extended import JWTManager
+from flask_cors import CORS
 
 jwt = JWTManager()
 
@@ -43,5 +44,9 @@ def create_app(testing=False):
     app.register_blueprint(attendance_bp)
     app.register_blueprint(leave_bp) #Added for leave feature
     logger.info("Flask App Initialized.")
+
+        # Enable CORS
+    CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins — change this to specific origin if needed
+
 
     return app
