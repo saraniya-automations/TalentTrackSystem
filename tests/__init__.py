@@ -5,6 +5,7 @@ from app.routes.employee_profile_routes import profile_bp
 from flask_jwt_extended import JWTManager
 from app.routes.attendance_routes import attendance_bp
 from app.routes.employee_profile_routes import profile_bp
+from flask_cors import CORS
 
 jwt = JWTManager()
 
@@ -25,5 +26,8 @@ def create_app(testing=False):
     app.register_blueprint(attendance_bp)
     app.register_blueprint(leave_bp)
     app.register_blueprint(profile_bp)
+
+    # Enable CORS
+    CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins — change this to specific origin if needed
 
     return app
