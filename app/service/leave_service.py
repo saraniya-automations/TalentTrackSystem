@@ -32,10 +32,12 @@ class LeaveService(Database):
         if leave_days > balance:
             return {"error": f"Insufficient {leave_type} balance"}, 400
 
-        self.conn.execute('''
+        insert_cursor = self.conn.execute('''
             INSERT INTO leaves (employee_id, leave_type, start_date, end_date, reason)
             VALUES (?, ?, ?, ?, ?)
         ''', (employee_id, leave_type, start_date, end_date, reason))
+
+        leave_id = insert_cursor.lastrowid
 
         self.conn.execute(f'''
             UPDATE leave_balances
@@ -45,7 +47,7 @@ class LeaveService(Database):
 
         self.conn.commit()
 
-        return {"message": "Leave applied successfully", "days": leave_days}, 201
+        return {"message": "Leave applied successfully", "days": leave_days, "leave_id": leave_id}, 201
 
     def get_leave_balance(self, employee_id):
         cursor = self.conn.execute('SELECT * FROM leave_balances WHERE employee_id = ?', (employee_id,))
@@ -60,16 +62,24 @@ class LeaveService(Database):
     def update_leave_status(self, leave_id, status, approver_id):
         user_model = User()
         leave = self.get_leave_by_id(leave_id)
-        approver = user_model.get_by_id(approver_id)
+        approver = user_model.get_by_employee_id(approver_id)
 
         if not leave:
             return {"error": "Leave request not found"}, 404
+        
+        if not approver:
+            return {"error": "Approver not found"}, 404
 
-        if approver["role"] != "admin":
+        if approver["role"] != "Admin":
             return {"error": "Only admins can approve/reject leaves"}, 403
 
         if leave["employee_id"] == approver_id:
             return {"error": "Admins cannot approve their own leave requests"}, 403
+        
+        # Check if the leave belongs to an Admin — only another Admin can approve it
+        applicant = user_model.get_by_employee_id(leave["employee_id"])
+        if applicant and applicant["role"] == "admin" and approver_id == leave["employee_id"]:
+           return {"error": "Admins cannot approve their own leave"}, 403
 
         if status not in ["Approved", "Rejected"]:
             return {"error": "Invalid status. Must be Approved or Rejected"}, 400
@@ -84,9 +94,9 @@ class LeaveService(Database):
 
     def get_pending_leaves(self):
         cursor = self.conn.execute('''
-            SELECT l.*, u.first_name, u.last_name, u.email
+            SELECT l.*, u.name, u.email, u.role
             FROM leaves l
-            JOIN users u ON l.employee_id = u.id
+            JOIN users u ON l.employee_id = u.employee_id
             WHERE l.status IS NULL OR l.status = 'Pending'
             ORDER BY l.start_date ASC
         ''')
