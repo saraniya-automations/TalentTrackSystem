@@ -29,3 +29,8 @@ class SalaryService:
 
     def get_filtered_salary_records(self, employee_id=None, month=None):
         return self.salary_model.fetch_salary_records(employee_id, month)
+    
+
+    def get_latest_salary(self, employee_id):
+        return self.salary_model.get_latest_salary(employee_id)
+
