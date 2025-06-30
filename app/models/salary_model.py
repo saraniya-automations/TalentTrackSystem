@@ -51,3 +51,14 @@ class SalaryModel(Database):
         cur = self.conn.execute(query, tuple(params))
         rows = cur.fetchall()
         return [dict(row) for row in rows]
+
+
+    def get_latest_salary(self, employee_id):
+        cur = self.conn.execute('''
+            SELECT * FROM payroll_records 
+            WHERE employee_id = ? 
+            ORDER BY salary_month DESC 
+            LIMIT 1
+        ''', (employee_id,))
+        row = cur.fetchone()
+        return dict(row) if row else None

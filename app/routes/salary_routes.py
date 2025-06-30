@@ -8,6 +8,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from app.models.user import User
 import csv
+from datetime import datetime, timedelta
 
 salary_bp = Blueprint('salary', __name__)
 salary_service = SalaryService()
@@ -162,3 +163,28 @@ def export_salary_records_pdf():
         as_attachment=True,
         download_name='salary_records_export.pdf'
     )
+
+@salary_bp.route('/salary/countdown', methods=['GET'])
+@jwt_required()
+def salary_countdown():
+    identity = get_jwt_identity()
+    employee_id = identity['employee_id']
+
+    latest_salary = salary_service.get_latest_salary(employee_id)
+    if not latest_salary:
+        return jsonify({"message": "No salary record found"}), 404
+
+    # Calculate next payday
+    year, month = map(int, latest_salary['salary_month'].split('-'))
+    today = datetime.now().date()
+    payday = datetime(year, month, 1).replace(day=28) + timedelta(days=4)
+    payday = (payday - timedelta(days=payday.day)).date()  # last day of the month as date
+
+    days_remaining = (payday - today).days
+
+    return jsonify({
+        "next_payday": payday.strftime('%Y-%m-%d'),
+        "days_remaining": max(days_remaining, 0),
+        "expected_amount": latest_salary['direct_deposit_amount'],
+        "pay_frequency": latest_salary['pay_frequency']
+    }), 200

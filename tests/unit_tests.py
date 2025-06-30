@@ -944,3 +944,22 @@ def test_export_salary_records_pdf_no_data_found(client):
 
     assert response.status_code == 404
     assert response.get_json()['message'] == "No records found"
+
+def test_salary_countdown_success(client):
+    login_res = client.post('/login', json={
+        "email": "leaveuser@example.com",
+        "password": "EmpPass123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    response = client.get('/salary/countdown', headers={
+        "Authorization": f"Bearer {token}"
+    })
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "days_remaining" in data
+    assert "expected_amount" in data
+    assert "pay_frequency" in data
+
