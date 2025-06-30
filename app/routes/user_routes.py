@@ -47,14 +47,16 @@ def add_user():
     
  
 
-
+@jwt_required()
+@role_required("Admin")
 @user_bp.route('/users', methods=['GET'])
 def get_all_users():
     users = user_service.get_users()
     for user in users:
         user.pop('password_hash', None)
     return jsonify(users)
-
+@jwt_required()
+@role_required("Admin")
 @user_bp.route('/users/search', methods=['GET'])
 def search_user():
     name = request.args.get('name', '')

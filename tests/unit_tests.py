@@ -750,3 +750,197 @@ def test_inactive_user_cannot_login(client):
     assert login_res.status_code == 403
     assert login_res.get_json()["error"] == "User account is inactive"
 
+def test_add_salary_records_success(client):
+    # Login as admin
+    login_res = client.post('/login', json={
+        "email": "adminleave@example.com",
+        "password": "AdminPass123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    user_model = User()
+    user = user_model.get_by_email("leaveuser@example.com")
+    assert user is not None, "Test employee user should exist for salary record test"
+    emp_id = user['employee_id']
+
+    # Add salary record
+    salary_data = {
+        "employee_id": emp_id,  # Use the actual employee ID
+        "salary_month": "2025-06",
+        "basic_salary": 5000,
+        "bonus": 500,
+        "deductions": 200,
+        "currency": "NZD",
+        "pay_frequency": "Monthly",
+        "direct_deposit_amount": 5300
+    }
+    response = client.post('/salary/add',
+        json=salary_data,
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    # Debugging: Print the response if it fails
+    if response.status_code != 201:
+        print("Error response:", response.json)
+    
+    assert response.status_code == 201
+    assert response.json['message'] == "Salary record added successfully"
+
+def test_add_salary_record_unauthorized(client):
+    # Login as employee
+    login_res = client.post('/login', json={
+        "email": "leaveuser@example.com",
+        "password": "EmpPass123"
+    })
+    assert login_res.status_code == 200
+    employee_token = login_res.get_json()['access_token']
+    employee_id = login_res.get_json()['employee_id']
+
+    data = {
+        "employee_id": employee_id,
+        "salary_month": "2025-06",
+        "basic_salary": 5000
+    }
+    response = client.post('/salary/add',
+        json=data,
+        headers={"Authorization": f"Bearer {employee_token}"}
+    )
+    assert response.status_code == 403 or response.status_code == 401
+
+def test_view_my_salary_records(client):
+    # Login as employee
+    login_res = client.post('/login', json={
+        "email": "leaveuser@example.com",
+        "password": "EmpPass123"
+    })
+    assert login_res.status_code == 200
+    employee_token = login_res.get_json()['access_token']
+    response = client.get('/salary/my-records',
+        headers={"Authorization": f"Bearer {employee_token}"}
+    )
+    assert response.status_code == 200
+    assert isinstance(response.json, list)
+
+def test_view_my_salary_records_with_month(client):
+    # Login as employee
+    login_res = client.post('/login', json={
+        "email": "leaveuser@example.com",
+        "password": "EmpPass123"
+    })
+    assert login_res.status_code == 200
+    employee_token = login_res.get_json()['access_token']
+
+    response = client.get('/salary/my-records?month=2025-06',
+        headers={"Authorization": f"Bearer {employee_token}"}
+    )
+    assert response.status_code == 200
+    assert isinstance(response.json, (list, dict))
+
+def test_employee_download_payslip(client):
+    # Login as employee
+    login_res = client.post('/login', json={
+        "email": "leaveuser@example.com",
+        "password": "EmpPass123"
+    })
+    assert login_res.status_code == 200
+    employee_token = login_res.get_json()['access_token']
+
+    response = client.get(
+        '/salary/my-records/payslip?month=2025-06',
+        headers={"Authorization": f"Bearer {employee_token}"}
+    )
+
+    assert response.status_code == 200
+    assert response.headers['Content-Type'] == 'application/pdf'
+
+def test_admin_view_employee_salary_records(client):
+    # Step 1: Login as admin
+    login_res = client.post('/login', json={
+        "email": "adminleave@example.com",
+        "password": "AdminPass123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    # Step 2: Get employee record
+    user_model = User()
+    user = user_model.get_by_email("leaveuser@example.com")
+    assert user is not None
+    emp_id = user['employee_id']
+
+    # Step 3: View salary records for that employee for a specific month
+    month = "2025-06"
+    res_with_month = client.get(
+        f'/salary/employee/{emp_id}?month={month}',
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert res_with_month.status_code == 200
+    assert "salary_month" in res_with_month.get_json() or "message" in res_with_month.get_json()
+
+    # Step 4: View all salary records for that employee
+    res_all = client.get(
+        f'/salary/employee/{emp_id}',
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert res_all.status_code == 200
+    assert isinstance(res_all.get_json(), list)
+
+def test_export_salary_records_pdf_success(client):
+    # Step 1: Login as admin
+    login_res = client.post('/login', json={
+        "email": "adminleave@example.com",
+        "password": "AdminPass123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    user_model = User()
+    user = user_model.get_by_email("leaveuser@example.com")
+    assert user is not None
+    emp_id = user['employee_id']
+
+    params = {
+        'month': '2025-06',
+        'employee_id': emp_id
+    }
+
+    # Step 2: Call the PDF export route with optional filters
+    response = client.get(
+        '/salary/export-pdf',
+        query_string=params,  # Safer than string concatenation
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    # Step 3: Check response
+    assert response.status_code == 200
+    assert response.mimetype == 'application/pdf'
+    assert 'attachment; filename=salary_records_export.pdf' in response.headers.get('Content-Disposition', '')
+
+    # Optional: check if content is not empty
+    assert response.data[:4] == b'%PDF'  # PDF files start with "%PDF"
+
+def test_export_salary_records_pdf_unauthorized(client):
+    # No token provided
+    response = client.get('/salary/export-pdf?month=2025-06&employee_id=EMP002')
+
+    assert response.status_code == 401
+    assert b"Missing Authorization Header" in response.data or b"Token" in response.data
+
+def test_export_salary_records_pdf_no_data_found(client):
+    # Login as admin
+    login_res = client.post('/login', json={
+        "email": "adminleave@example.com",
+        "password": "AdminPass123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    # Call with invalid filters (e.g., no records for the given month or employee)
+    response = client.get(
+        '/salary/export-pdf?month=2099-01&employee_id=NONEXISTENT',
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == 404
+    assert response.get_json()['message'] == "No records found"
