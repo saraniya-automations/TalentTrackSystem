@@ -6,19 +6,23 @@ from app.utils.auth import role_required
 leave_bp = Blueprint('leave_routes', __name__)
 leave_service = LeaveService()
 
-# Employee applies for leave
+# Employee or Admin applies for leave
 @leave_bp.route('/leave/apply', methods=['POST'])
 @jwt_required()
 def apply_leave():
     data = request.get_json()
     identity = get_jwt_identity()
+    employee_id = identity.get('employee_id')
+
+    if not employee_id:
+        return jsonify({'error': 'Invalid token: employee_id missing'}), 401
 
     required_fields = ['leave_type', 'start_date', 'end_date', 'reason']
     if not all(field in data for field in required_fields):
         return jsonify({'error': 'Missing required fields'}), 400
 
     result, code = leave_service.apply_leave(
-        employee_id=identity['employee_id'],
+        employee_id=employee_id,
         leave_type=data['leave_type'],
         start_date=data['start_date'],
         end_date=data['end_date'],
@@ -27,12 +31,17 @@ def apply_leave():
     return jsonify(result), code
 
 
-# Employee checks leave balance
+# Employee or Admin checks their own leave balance
 @leave_bp.route('/leave/balance', methods=['GET'])
 @jwt_required()
 def get_balance():
     identity = get_jwt_identity()
-    balance = leave_service.get_leave_balance(identity['employee_id'])
+    employee_id = identity.get('employee_id')
+
+    if not employee_id:
+        return jsonify({'error': 'Invalid token: employee_id missing'}), 401
+
+    balance = leave_service.get_leave_balance(employee_id)
     if not balance:
         return jsonify({'error': 'Balance not found'}), 404
     return jsonify(balance), 200
@@ -46,12 +55,16 @@ def update_leave_status(leave_id):
     data = request.get_json()
     status = data.get('status')
     identity = get_jwt_identity()
+    approver_id = identity.get('employee_id')
+
+    if not approver_id:
+        return jsonify({'error': 'Invalid token: employee_id missing'}), 401
 
     if status not in ['Approved', 'Rejected']:
         return jsonify({'error': 'Invalid status. Must be "Approved" or "Rejected".'}), 400
 
     try:
-        result, code = leave_service.update_leave_status(leave_id, status, identity['employee_id'])
+        result, code = leave_service.update_leave_status(leave_id, status, approver_id)
         return jsonify(result), code
     except Exception as e:
         return jsonify({'error': str(e)}), 500
