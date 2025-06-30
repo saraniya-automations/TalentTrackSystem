@@ -105,7 +105,20 @@ class Database:
                 FOREIGN KEY (employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
 
-            
+            self.conn.execute('''CREATE TABLE IF NOT EXISTS payroll_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                employee_id TEXT NOT NULL,
+                salary_month TEXT NOT NULL,             
+                basic_salary REAL NOT NULL,
+                bonus REAL DEFAULT 0,
+                deductions REAL DEFAULT 0,
+                net_salary REAL NOT NULL,
+                currency TEXT DEFAULT 'NZD',
+                pay_frequency TEXT DEFAULT 'Monthly',
+                direct_deposit_amount REAL,
+                generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
+            )''')
 
 
             # # Add manager_id column to users table if not exists
