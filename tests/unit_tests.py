@@ -110,8 +110,18 @@ def test_login_failure(client):
 def test_get_all_users(client):
     response = client.get('/users')
     assert response.status_code == 200, f"Expected 200 OK but got {response.status_code}"
-    users = response.get_json()
-    assert isinstance(users, list), "Expected response to be a list"
+    
+    data = response.get_json()
+    
+    assert isinstance(data, dict), "Expected response to be a dictionary"
+    assert 'items' in data, "Response should contain 'items' key"
+    assert isinstance(data['items'], list), "'items' should be a list"
+    
+    for key in ['total', 'page', 'per_page', 'total_pages']:
+        assert key in data, f"Missing pagination key: {key}"
+    
+    for user in data['items']:
+        assert 'password_hash' not in user, "Password hash should not be exposed"
 
 
 def test_employee_cannot_delete_user(client):

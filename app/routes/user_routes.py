@@ -51,10 +51,19 @@ def add_user():
 @role_required("Admin")
 @user_bp.route('/users', methods=['GET'])
 def get_all_users():
-    users = user_service.get_users()
-    for user in users:
+    # Get pagination parameters from query string
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
+    
+    # Get paginated results
+    result = user_service.get_users(page, per_page)
+    
+    # Remove passwords from the response
+    for user in result['items']:
         user.pop('password_hash', None)
-    return jsonify(users)
+    
+    return jsonify(result)
+
 @jwt_required()
 @role_required("Admin")
 @user_bp.route('/users/search', methods=['GET'])
