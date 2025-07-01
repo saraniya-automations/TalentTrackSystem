@@ -478,18 +478,17 @@ def test_reset_password_invalid_token(client):
     res = client.post("/reset-password", json=payload)
     assert res.status_code == 400
     assert "error" in res.get_json()
-def test_apply_leave_and_check_balance(client):
+def setup_test_users():
     user_model = User()
     db = Database()
 
-    # Clean up if exists
-    if user_model.get_by_email("leaveuser@example.com"):
-        user_model.hard_delete_by_email("leaveuser@example.com")
-    if user_model.get_by_email("adminleave@example.com"):
-        user_model.hard_delete_by_email("adminleave@example.com")
+    # Clean up test users
+    for email in ["adminleave@example.com", "leaveuser@example.com"]:
+        if user_model.get_by_email(email):
+            user_model.hard_delete_by_email(email)
 
     # Create Admin
-    admin_id, _ = user_model.add(
+    admin_id, admin_emp_id = user_model.add(
         name="Admin User",
         email="adminleave@example.com",
         phone="9999999999",
@@ -499,7 +498,7 @@ def test_apply_leave_and_check_balance(client):
     )
 
     # Create Employee
-    emp_id, emp_employee_id = user_model.add(
+    emp_id, emp_emp_id = user_model.add(
         name="Leave User",
         email="leaveuser@example.com",
         phone="1112223333",
@@ -508,48 +507,103 @@ def test_apply_leave_and_check_balance(client):
         password_hash=generate_password_hash("EmpPass123")
     )
 
-    # Add leave balance
+    # Add leave balances
     db.conn.execute('''
         INSERT INTO leave_balances (employee_id, annual, casual, sick, maternity)
         VALUES (?, ?, ?, ?, ?)
-    ''', (emp_employee_id, 5, 3, 2, 90))
+    ''', (emp_emp_id, 5, 3, 2, 90))
+
+    db.conn.execute('''
+        INSERT INTO leave_balances (employee_id, annual, casual, sick, maternity)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (admin_emp_id, 5, 3, 2, 90))
+
     db.conn.commit()
 
+    return emp_emp_id, admin_emp_id
+
+
+def test_apply_leave_and_check_balance(client):
+    emp_emp_id, _ = setup_test_users()
+
     # Login as Employee
-    login_res = client.post('/login', json={
-        "email": "leaveuser@example.com",
-        "password": "EmpPass123"
-    })
-    assert login_res.status_code == 200
+    login_res = client.post('/login', json={"email": "leaveuser@example.com", "password": "EmpPass123"})
     token = login_res.get_json()['access_token']
 
-    # Check balance before leave
-    balance_res = client.get('/leave/balance',
-                             headers={"Authorization": f"Bearer {token}"})
-    assert balance_res.status_code == 200
-    balance = balance_res.get_json()
-    assert balance['annual'] == 5
+    # Check balance before
+    res = client.get('/leave/balance', headers={"Authorization": f"Bearer {token}"})
+    assert res.status_code == 200
+    assert res.get_json()['annual'] == 5
 
-    # Apply 2-day annual leave
-    apply_res = client.post('/leave/apply',
-                             json={
-                                 "leave_type": "annual",
-                                 "start_date": "2025-07-01",
-                                 "end_date": "2025-07-02",
-                                 "reason": "Personal"
-                             },
-                             headers={"Authorization": f"Bearer {token}"})
-    assert apply_res.status_code == 201
-    assert apply_res.get_json()['message'] == "Leave applied successfully"
-    assert apply_res.get_json()['days'] == 2
+    # Apply leave
+    apply = client.post('/leave/apply',
+        json={"leave_type": "annual", "start_date": "2025-07-01", "end_date": "2025-07-02", "reason": "Personal"},
+        headers={"Authorization": f"Bearer {token}"})
+    assert apply.status_code == 201
+    assert apply.get_json()['days'] == 2
 
-    # Check balance after leave
-    balance_after = client.get('/leave/balance',
-                               headers={"Authorization": f"Bearer {token}"})
-    assert balance_after.status_code == 200
-    updated = balance_after.get_json()
-    assert updated['annual'] == 3  # 5 - 2 = 3
+    # Check balance after
+    after = client.get('/leave/balance', headers={"Authorization": f"Bearer {token}"})
+    assert after.status_code == 200
+    assert after.get_json()['annual'] == 3  # 5 - 2
 
+
+def test_admin_can_approve_employee_leave(client):
+    emp_emp_id, admin_emp_id = setup_test_users()
+
+    # Employee applies for leave
+    emp_login = client.post('/login', json={"email": "leaveuser@example.com", "password": "EmpPass123"})
+    emp_token = emp_login.get_json()['access_token']
+
+    apply = client.post('/leave/apply',
+        json={"leave_type": "casual", "start_date": "2025-07-03", "end_date": "2025-07-03", "reason": "Day off"},
+        headers={"Authorization": f"Bearer {emp_token}"})
+    leave_id = apply.get_json()['leave_id']
+
+    # Admin logs in and approves
+    admin_login = client.post('/login', json={"email": "adminleave@example.com", "password": "AdminPass123"})
+    admin_token = admin_login.get_json()['access_token']
+
+    approve = client.put(f'/leave/{leave_id}/status',
+        json={"status": "Approved"},
+        headers={"Authorization": f"Bearer {admin_token}"})
+    assert approve.status_code == 200
+    assert approve.get_json()['message'] == "Leave approved successfully."
+
+
+def test_admin_cannot_approve_own_leave(client):
+    _, admin_emp_id = setup_test_users()
+
+    # Admin logs in and applies leave
+    admin_login = client.post('/login', json={"email": "adminleave@example.com", "password": "AdminPass123"})
+    admin_token = admin_login.get_json()['access_token']
+
+    apply = client.post('/leave/apply',
+        json={"leave_type": "sick", "start_date": "2025-07-05", "end_date": "2025-07-06", "reason": "Flu"},
+        headers={"Authorization": f"Bearer {admin_token}"})
+    leave_id = apply.get_json()['leave_id']
+
+    # Admin tries to approve their own leave
+    approve = client.put(f'/leave/{leave_id}/status',
+        json={"status": "Approved"},
+        headers={"Authorization": f"Bearer {admin_token}"})
+    assert approve.status_code == 403
+    assert "cannot approve their own" in approve.get_json()['error'].lower()
+
+
+def test_employee_cannot_approve_leave(client):
+    emp_emp_id, _ = setup_test_users()
+
+    # Login as Employee
+    emp_login = client.post('/login', json={"email": "leaveuser@example.com", "password": "EmpPass123"})
+    emp_token = emp_login.get_json()['access_token']
+
+    # Try to approve a leave (invalid permission)
+    approve = client.put('/leave/999/status',
+        json={"status": "Approved"},
+        headers={"Authorization": f"Bearer {emp_token}"})
+    assert approve.status_code == 403 or approve.status_code == 401
+    
 def test_admin_approve_attendance(client):
     # Login as admin
     login_res = client.post('/login', json={

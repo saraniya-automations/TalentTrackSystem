@@ -1,43 +1,41 @@
+# app/routes/leave_routes.py
+
 from flask import Blueprint, request, jsonify
 from app.service.leave_service import LeaveService
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth import role_required
+from app.schemas.leave_schema import LeaveApplySchema, LeaveStatusUpdateSchema
 
 leave_bp = Blueprint('leave_routes', __name__)
 leave_service = LeaveService()
 
-# Employee or Admin applies for leave
 @leave_bp.route('/leave/apply', methods=['POST'])
 @jwt_required()
 def apply_leave():
-    data = request.get_json()
     identity = get_jwt_identity()
     employee_id = identity.get('employee_id')
-
     if not employee_id:
         return jsonify({'error': 'Invalid token: employee_id missing'}), 401
 
-    required_fields = ['leave_type', 'start_date', 'end_date', 'reason']
-    if not all(field in data for field in required_fields):
-        return jsonify({'error': 'Missing required fields'}), 400
+    data = request.get_json()
+    schema = LeaveApplySchema()
+    if (errors := schema.validate(data)):
+        return jsonify({'errors': errors}), 400
 
     result, code = leave_service.apply_leave(
-        employee_id=employee_id,
-        leave_type=data['leave_type'],
-        start_date=data['start_date'],
-        end_date=data['end_date'],
-        reason=data['reason']
+        employee_id,
+        data['leave_type'],
+        str(data['start_date']),
+        str(data['end_date']),
+        data['reason']
     )
     return jsonify(result), code
 
-
-# Employee or Admin checks their own leave balance
 @leave_bp.route('/leave/balance', methods=['GET'])
 @jwt_required()
 def get_balance():
     identity = get_jwt_identity()
     employee_id = identity.get('employee_id')
-
     if not employee_id:
         return jsonify({'error': 'Invalid token: employee_id missing'}), 401
 
@@ -46,31 +44,23 @@ def get_balance():
         return jsonify({'error': 'Balance not found'}), 404
     return jsonify(balance), 200
 
-
-# Admin approves or rejects a leave request (cannot approve own)
 @leave_bp.route('/leave/<int:leave_id>/status', methods=['PUT'])
 @jwt_required()
 @role_required('Admin')
 def update_leave_status(leave_id):
-    data = request.get_json()
-    status = data.get('status')
     identity = get_jwt_identity()
     approver_id = identity.get('employee_id')
-
     if not approver_id:
         return jsonify({'error': 'Invalid token: employee_id missing'}), 401
 
-    if status not in ['Approved', 'Rejected']:
-        return jsonify({'error': 'Invalid status. Must be "Approved" or "Rejected".'}), 400
+    data = request.get_json()
+    schema = LeaveStatusUpdateSchema()
+    if (errors := schema.validate(data)):
+        return jsonify({'errors': errors}), 400
 
-    try:
-        result, code = leave_service.update_leave_status(leave_id, status, approver_id)
-        return jsonify(result), code
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    result, code = leave_service.update_leave_status(leave_id, data['status'], approver_id)
+    return jsonify(result), code
 
-
-# Admin views all pending leave requests
 @leave_bp.route('/leave/pending', methods=['GET'])
 @jwt_required()
 @role_required('Admin')
