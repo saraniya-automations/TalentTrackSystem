@@ -9,7 +9,7 @@ user_model = User()
 def create_user(data):
     try:
         if user_model.get_by_email(data['email']):
-            return {"error": "User with this email already exists."}, 400
+            return {"error":"User with this email already exists."}
         
         password_hash = generate_password_hash(data['password'])
         status = data.get('status', 'Active')
