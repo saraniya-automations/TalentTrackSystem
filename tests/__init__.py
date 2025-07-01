@@ -22,5 +22,6 @@ def create_app(testing=False):
     app.register_blueprint(user_bp)
     app.register_blueprint(leave_bp)
     app.register_blueprint(profile_bp)
+ 
 
     return app

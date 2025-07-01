@@ -50,7 +50,7 @@ class Database:
                 status TEXT DEFAULT 'Pending',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(employee_id) REFERENCES users(employee_id)
+                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')  
 
             #Leave Balance Table
@@ -70,8 +70,8 @@ class Database:
                 comments TEXT NOT NULL,
                 reviewer_id TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(employee_id) REFERENCES users(employee_id),
-                FOREIGN KEY(reviewer_id) REFERENCES users(employee_id)
+                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE,
+                FOREIGN KEY(reviewer_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
 
             self.conn.execute('''CREATE TABLE IF NOT EXISTS employee_profiles (
@@ -96,3 +96,30 @@ class Database:
             # columns = [column[1] for column in cursor.fetchall()]  # Now using cursor
             # if 'manager_id' not in columns:
             #     self.conn.execute('ALTER TABLE users ADD COLUMN manager_id TEXT')
+
+            #Course management
+            self.conn.execute('''CREATE TABLE IF NOT EXISTS courses (
+                id INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                description TEXT,
+                type TEXT CHECK(type IN ('Mandatory', 'Optional')),
+                department TEXT,
+                target_role TEXT,
+                deadline TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )''')
+
+            #Course submissions from employees
+            self.conn.execute('''CREATE TABLE IF NOT EXISTS course_submissions (
+                id INTEGER PRIMARY KEY,
+                employee_id TEXT NOT NULL,
+                course_id INTEGER NOT NULL,
+                completion_notes TEXT,
+                status TEXT DEFAULT 'Pending',
+                reviewer_comment TEXT,
+                reviewed_by TEXT,
+                reviewed_at TEXT,
+                submitted_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE,
+                FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE
+            )''')

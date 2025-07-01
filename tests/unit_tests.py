@@ -483,18 +483,17 @@ def test_reset_password_invalid_token(client):
     res = client.post("/reset-password", json=payload)
     assert res.status_code == 400
     assert "error" in res.get_json()
-def test_apply_leave_and_check_balance(client):
+def setup_test_users():
     user_model = User()
     db = Database()
 
-    # Clean up if exists
-    if user_model.get_by_email("leaveuser@example.com"):
-        user_model.hard_delete_by_email("leaveuser@example.com")
-    if user_model.get_by_email("adminleave@example.com"):
-        user_model.hard_delete_by_email("adminleave@example.com")
+    # Clean up test users
+    for email in ["adminleave@example.com", "leaveuser@example.com"]:
+        if user_model.get_by_email(email):
+            user_model.hard_delete_by_email(email)
 
     # Create Admin
-    admin_id, _ = user_model.add(
+    admin_id, admin_emp_id = user_model.add(
         name="Admin User",
         email="adminleave@example.com",
         phone="9999999999",
@@ -504,7 +503,7 @@ def test_apply_leave_and_check_balance(client):
     )
 
     # Create Employee
-    emp_id, emp_employee_id = user_model.add(
+    emp_id, emp_emp_id = user_model.add(
         name="Leave User",
         email="leaveuser@example.com",
         phone="1112223333",
@@ -513,27 +512,33 @@ def test_apply_leave_and_check_balance(client):
         password_hash=generate_password_hash("EmpPass123")
     )
 
-    # Add leave balance
+    # Add leave balances
     db.conn.execute('''
         INSERT INTO leave_balances (employee_id, annual, casual, sick, maternity)
         VALUES (?, ?, ?, ?, ?)
-    ''', (emp_employee_id, 5, 3, 2, 90))
+    ''', (emp_emp_id, 5, 3, 2, 90))
+
+    db.conn.execute('''
+        INSERT INTO leave_balances (employee_id, annual, casual, sick, maternity)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (admin_emp_id, 5, 3, 2, 90))
+
     db.conn.commit()
 
+    return emp_emp_id, admin_emp_id
+
+
+def test_apply_leave_and_check_balance(client):
+    emp_emp_id, _ = setup_test_users()
+
     # Login as Employee
-    login_res = client.post('/login', json={
-        "email": "leaveuser@example.com",
-        "password": "EmpPass123"
-    })
-    assert login_res.status_code == 200
+    login_res = client.post('/login', json={"email": "leaveuser@example.com", "password": "EmpPass123"})
     token = login_res.get_json()['access_token']
 
-    # Check balance before leave
-    balance_res = client.get('/leave/balance',
-                             headers={"Authorization": f"Bearer {token}"})
-    assert balance_res.status_code == 200
-    balance = balance_res.get_json()
-    assert balance['annual'] == 5
+    # Check balance before
+    res = client.get('/leave/balance', headers={"Authorization": f"Bearer {token}"})
+    assert res.status_code == 200
+    assert res.get_json()['annual'] == 5
 
     # Apply 2-day annual leave
     apply_res = client.post('/leave/apply',
@@ -555,4 +560,426 @@ def test_apply_leave_and_check_balance(client):
     updated = balance_after.get_json()
     assert updated['annual'] == 3  # 5 - 2 = 3
 
+def test_admin_approve_attendance(client):
+    # Login as admin
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    token = login_res.get_json()['access_token']
+
+    # Fetch a pending request first
+    res = client.get('/attendance/requests', headers={"Authorization": f"Bearer {token}"})
+    
+    if pending := res.get_json():
+        record_id = pending[0]["id"]
+        approve_res = client.put(f"/attendance/approve/{record_id}",
+                                 headers={"Authorization": f"Bearer {token}"})
+        assert approve_res.status_code == 200
+        assert approve_res.get_json()["message"] == "Attendance request approved"
+    else:
+        pytest.skip("No pending requests to approve")
+
+
+def test_admin_reject_attendance(client):
+    # Login as admin
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    token = login_res.get_json()['access_token']
+
+    res = client.get('/attendance/requests', headers={"Authorization": f"Bearer {token}"})
+    pending = res.get_json()
+    
+    if pending:
+        record_id = pending[0]["id"]
+        reject_payload = {"rejection_reason": "Time mismatch"}
+        reject_res = client.put(f"/attendance/reject/{record_id}",
+                                json=reject_payload,
+                                headers={"Authorization": f"Bearer {token}"})
+        assert reject_res.status_code == 200
+        assert reject_res.get_json()["message"] == "Attendance request rejected"
+    # else:
+    #     pytest.skip("No pending requests to reject")
+
+
+# def test_delete_user_as_admin(client):
+    # Login as admin
+    # login_res = client.post('/login', json={
+    #     "email": "adminleave@example.com",
+    #     "password": "AdminPass123"
+    # })
+    # assert login_res.status_code == 200, f"Admin login failed: {login_res.get_json()}"
+    # data = login_res.get_json()
+    # token = data['access_token']
+
+    # # Create a new user
+    # new_email = "deletetest1@example.com"
+    # user_model = User()
+    # profile_model = EmployeeProfile()
+
+    # if user_model.get_by_email(new_email):
+    #     user_model.hard_delete_by_email(new_email)
+
+    # create_res = client.post('/users',
+    #     json={
+    #         "name": "Delete Test",
+    #         "email": new_email,
+    #         "phone": "9998887777",
+    #         "department": "IT",
+    #         "role": "Employee",
+    #         "password": "Password123"
+    #     },
+    #     headers={"Authorization": f"Bearer {token}"}
+    # )
+    # assert create_res.status_code == 201
+    # employee_id = create_res.get_json()["id"]
+
+    # # Make sure profile was created
+    # profile = profile_model.get_by_employee_id(employee_id)
+    # assert profile is not None, "Profile should exist before deletion"
+
+    # user_model = User()
+    # user = user_model.get_by_email("leaveuser@example.com")
+    # assert user is not None, "Test employee user should exist for deletion test"
+    # emp_id = user['employee_id']
+    # response = client.delete(f'/users/{emp_id}',headers={"Authorization": f"Bearer {token}"})
+    # assert response.status_code == 200
+    # assert response.get_json()["message"] == "User deleted"
+
+def test_delete_user_as_admin(client):
+    # Login as admin
+    login_res = client.post('/login', json={
+        "email": "adminleave@example.com",
+        "password": "AdminPass123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    # Create and then delete the same user
+    new_email = "deletetest1@example.com"
+    user_model = User()
+    profile_model = EmployeeProfile()
+
+    # Cleanup if test failed previously
+    if user_model.get_by_email(new_email):
+        user_model.hard_delete_by_email(new_email)
+
+    # Create new user
+    create_res = client.post('/users',
+        json={
+            "name": "Delete Test",
+            "email": new_email,
+            "phone": "9998887777",
+            "department": "IT",
+            "role": "Employee",
+            "password": "Password123"
+        },
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert create_res.status_code == 201
+    employee_id = create_res.get_json()["id"]
+
+    # Verify profile exists
+    profile = profile_model.get_by_employee_id(employee_id)
+    assert profile is not None
+
+    # Delete the user we just created
+    response = client.delete(f'/users/{employee_id}',
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 200
+    assert response.get_json()["message"] == "User deleted"
+
+    # Verify user is really deleted
+    user = user_model.get_by_email(new_email)
+    assert user is None
+
+def test_profile_deleted_when_user_deleted(client):
+     # Login as admin
+    login_res = client.post('/login', json={
+        "email": "adminleave@example.com",
+        "password": "AdminPass123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    # Create and then delete the same user
+    new_email = "deletetest1@example.com"
+    user_model = User()
+    profile_model = EmployeeProfile()
+
+    # Cleanup if test failed previously
+    if user_model.get_by_email(new_email):
+        user_model.hard_delete_by_email(new_email)
+
+    # Create new user
+    create_res = client.post('/users',
+        json={
+            "name": "Delete Test",
+            "email": new_email,
+            "phone": "9998887777",
+            "department": "IT",
+            "role": "Employee",
+            "password": "Password123"
+        },
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert create_res.status_code == 201
+    employee_id = create_res.get_json()["id"]
+
+#     # Make sure profile was created
+    profile = profile_model.get_by_employee_id(employee_id)
+    assert profile is not None, "Profile should exist before deletion"
+
+    # Now delete the user
+    delete_res = client.delete(f'/users/{employee_id}', headers={"Authorization": f"Bearer {token}"})
+    assert delete_res.status_code == 200
+    assert delete_res.get_json()["message"] == "User deleted"
+
+    # Verify profile is deleted
+    profile = profile_model.get_by_employee_id(employee_id)
+    assert profile is None, "Profile should be deleted when user is deleted"
+
+def test_inactive_user_cannot_login(client):
+    email = "inactiveuser1@example.com"
+    user_model = User()
+    # Clean up if exists
+    user = user_model.get_by_email(email)
+    if user:
+        user_model.hard_delete_by_email(user['email'])
+    from app.service import user_service
+    # Create user with status = Inactive via service
+    user_service.create_user({
+        "name": "Inactive User",
+        "email": email,
+        "phone": "0000000000",
+        "department": "IT",
+        "role": "Employee",
+        "password": "SomePassword123",
+        "status": "Inactive"
+    })
+
+    # Try to log in
+    login_res = client.post('/login', json={
+        "email": email,
+        "password": "SomePassword123"
+    })
+
+    assert login_res.status_code == 403
+    assert login_res.get_json()["error"] == "User account is inactive"
+
+def test_add_salary_records_success(client):
+    # Login as admin
+    login_res = client.post('/login', json={
+        "email": "adminleave@example.com",
+        "password": "AdminPass123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    user_model = User()
+    user = user_model.get_by_email("leaveuser@example.com")
+    assert user is not None, "Test employee user should exist for salary record test"
+    emp_id = user['employee_id']
+
+    # Add salary record
+    salary_data = {
+        "employee_id": emp_id,  # Use the actual employee ID
+        "salary_month": "2025-06",
+        "basic_salary": 5000,
+        "bonus": 500,
+        "deductions": 200,
+        "currency": "NZD",
+        "pay_frequency": "Monthly",
+        "direct_deposit_amount": 5300
+    }
+    response = client.post('/salary/add',
+        json=salary_data,
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    # Debugging: Print the response if it fails
+    if response.status_code != 201:
+        print("Error response:", response.json)
+    
+    assert response.status_code == 201
+    assert response.json['message'] == "Salary record added successfully"
+
+def test_add_salary_record_unauthorized(client):
+    # Login as employee
+    login_res = client.post('/login', json={
+        "email": "leaveuser@example.com",
+        "password": "EmpPass123"
+    })
+    assert login_res.status_code == 200
+    employee_token = login_res.get_json()['access_token']
+    employee_id = login_res.get_json()['employee_id']
+
+    data = {
+        "employee_id": employee_id,
+        "salary_month": "2025-06",
+        "basic_salary": 5000
+    }
+    response = client.post('/salary/add',
+        json=data,
+        headers={"Authorization": f"Bearer {employee_token}"}
+    )
+    assert response.status_code == 403 or response.status_code == 401
+
+def test_view_my_salary_records(client):
+    # Login as employee
+    login_res = client.post('/login', json={
+        "email": "leaveuser@example.com",
+        "password": "EmpPass123"
+    })
+    assert login_res.status_code == 200
+    employee_token = login_res.get_json()['access_token']
+    response = client.get('/salary/my-records',
+        headers={"Authorization": f"Bearer {employee_token}"}
+    )
+    assert response.status_code == 200
+    assert isinstance(response.json, list)
+
+def test_view_my_salary_records_with_month(client):
+    # Login as employee
+    login_res = client.post('/login', json={
+        "email": "leaveuser@example.com",
+        "password": "EmpPass123"
+    })
+    assert login_res.status_code == 200
+    employee_token = login_res.get_json()['access_token']
+
+    response = client.get('/salary/my-records?month=2025-06',
+        headers={"Authorization": f"Bearer {employee_token}"}
+    )
+    assert response.status_code == 200
+    assert isinstance(response.json, (list, dict))
+
+def test_employee_download_payslip(client):
+    # Login as employee
+    login_res = client.post('/login', json={
+        "email": "leaveuser@example.com",
+        "password": "EmpPass123"
+    })
+    assert login_res.status_code == 200
+    employee_token = login_res.get_json()['access_token']
+
+    response = client.get(
+        '/salary/my-records/payslip?month=2025-06',
+        headers={"Authorization": f"Bearer {employee_token}"}
+    )
+
+    assert response.status_code == 200
+    assert response.headers['Content-Type'] == 'application/pdf'
+
+def test_admin_view_employee_salary_records(client):
+    # Step 1: Login as admin
+    login_res = client.post('/login', json={
+        "email": "adminleave@example.com",
+        "password": "AdminPass123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    # Step 2: Get employee record
+    user_model = User()
+    user = user_model.get_by_email("leaveuser@example.com")
+    assert user is not None
+    emp_id = user['employee_id']
+
+    # Step 3: View salary records for that employee for a specific month
+    month = "2025-06"
+    res_with_month = client.get(
+        f'/salary/employee/{emp_id}?month={month}',
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert res_with_month.status_code == 200
+    assert "salary_month" in res_with_month.get_json() or "message" in res_with_month.get_json()
+
+    # Step 4: View all salary records for that employee
+    res_all = client.get(
+        f'/salary/employee/{emp_id}',
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert res_all.status_code == 200
+    assert isinstance(res_all.get_json(), list)
+
+def test_export_salary_records_pdf_success(client):
+    # Step 1: Login as admin
+    login_res = client.post('/login', json={
+        "email": "adminleave@example.com",
+        "password": "AdminPass123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    user_model = User()
+    user = user_model.get_by_email("leaveuser@example.com")
+    assert user is not None
+    emp_id = user['employee_id']
+
+    params = {
+        'month': '2025-06',
+        'employee_id': emp_id
+    }
+
+    # Step 2: Call the PDF export route with optional filters
+    response = client.get(
+        '/salary/export-pdf',
+        query_string=params,  # Safer than string concatenation
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    # Step 3: Check response
+    assert response.status_code == 200
+    assert response.mimetype == 'application/pdf'
+    assert 'attachment; filename=salary_records_export.pdf' in response.headers.get('Content-Disposition', '')
+
+    # Optional: check if content is not empty
+    assert response.data[:4] == b'%PDF'  # PDF files start with "%PDF"
+
+def test_export_salary_records_pdf_unauthorized(client):
+    # No token provided
+    response = client.get('/salary/export-pdf?month=2025-06&employee_id=EMP002')
+
+    assert response.status_code == 401
+    assert b"Missing Authorization Header" in response.data or b"Token" in response.data
+
+def test_export_salary_records_pdf_no_data_found(client):
+    # Login as admin
+    login_res = client.post('/login', json={
+        "email": "adminleave@example.com",
+        "password": "AdminPass123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    # Call with invalid filters (e.g., no records for the given month or employee)
+    response = client.get(
+        '/salary/export-pdf?month=2099-01&employee_id=NONEXISTENT',
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == 404
+    assert response.get_json()['message'] == "No records found"
+
+def test_salary_countdown_success(client):
+    login_res = client.post('/login', json={
+        "email": "leaveuser@example.com",
+        "password": "EmpPass123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    response = client.get('/salary/countdown', headers={
+        "Authorization": f"Bearer {token}"
+    })
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "days_remaining" in data
+    assert "expected_amount" in data
+    assert "pay_frequency" in data
 
