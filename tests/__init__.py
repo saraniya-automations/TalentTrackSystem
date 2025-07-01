@@ -22,6 +22,8 @@ def create_app(testing=False):
     app.register_blueprint(user_bp)
     app.register_blueprint(leave_bp)
     app.register_blueprint(profile_bp)
- 
+
+    # Enable CORS
+    CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins — change this to specific origin if needed
 
     return app

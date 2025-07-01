@@ -540,26 +540,75 @@ def test_apply_leave_and_check_balance(client):
     assert res.status_code == 200
     assert res.get_json()['annual'] == 5
 
-    # Apply 2-day annual leave
-    apply_res = client.post('/leave/apply',
-                             json={
-                                 "leave_type": "annual",
-                                 "start_date": "2025-07-01",
-                                 "end_date": "2025-07-02",
-                                 "reason": "Personal"
-                             },
-                             headers={"Authorization": f"Bearer {token}"})
-    assert apply_res.status_code == 201
-    assert apply_res.get_json()['message'] == "Leave applied successfully"
-    assert apply_res.get_json()['days'] == 2
+    # Apply leave
+    apply = client.post('/leave/apply',
+        json={"leave_type": "annual", "start_date": "2025-07-01", "end_date": "2025-07-02", "reason": "Personal"},
+        headers={"Authorization": f"Bearer {token}"})
+    assert apply.status_code == 201
+    assert apply.get_json()['days'] == 2
 
-    # Check balance after leave
-    balance_after = client.get('/leave/balance',
-                               headers={"Authorization": f"Bearer {token}"})
-    assert balance_after.status_code == 200
-    updated = balance_after.get_json()
-    assert updated['annual'] == 3  # 5 - 2 = 3
+    # Check balance after
+    after = client.get('/leave/balance', headers={"Authorization": f"Bearer {token}"})
+    assert after.status_code == 200
+    assert after.get_json()['annual'] == 3  # 5 - 2
 
+
+def test_admin_can_approve_employee_leave(client):
+    emp_emp_id, admin_emp_id = setup_test_users()
+
+    # Employee applies for leave
+    emp_login = client.post('/login', json={"email": "leaveuser@example.com", "password": "EmpPass123"})
+    emp_token = emp_login.get_json()['access_token']
+
+    apply = client.post('/leave/apply',
+        json={"leave_type": "casual", "start_date": "2025-07-03", "end_date": "2025-07-03", "reason": "Day off"},
+        headers={"Authorization": f"Bearer {emp_token}"})
+    leave_id = apply.get_json()['leave_id']
+
+    # Admin logs in and approves
+    admin_login = client.post('/login', json={"email": "adminleave@example.com", "password": "AdminPass123"})
+    admin_token = admin_login.get_json()['access_token']
+
+    approve = client.put(f'/leave/{leave_id}/status',
+        json={"status": "Approved"},
+        headers={"Authorization": f"Bearer {admin_token}"})
+    assert approve.status_code == 200
+    assert approve.get_json()['message'] == "Leave approved successfully."
+
+
+def test_admin_cannot_approve_own_leave(client):
+    _, admin_emp_id = setup_test_users()
+
+    # Admin logs in and applies leave
+    admin_login = client.post('/login', json={"email": "adminleave@example.com", "password": "AdminPass123"})
+    admin_token = admin_login.get_json()['access_token']
+
+    apply = client.post('/leave/apply',
+        json={"leave_type": "sick", "start_date": "2025-07-05", "end_date": "2025-07-06", "reason": "Flu"},
+        headers={"Authorization": f"Bearer {admin_token}"})
+    leave_id = apply.get_json()['leave_id']
+
+    # Admin tries to approve their own leave
+    approve = client.put(f'/leave/{leave_id}/status',
+        json={"status": "Approved"},
+        headers={"Authorization": f"Bearer {admin_token}"})
+    assert approve.status_code == 403
+    assert "cannot approve their own" in approve.get_json()['error'].lower()
+
+
+def test_employee_cannot_approve_leave(client):
+    emp_emp_id, _ = setup_test_users()
+
+    # Login as Employee
+    emp_login = client.post('/login', json={"email": "leaveuser@example.com", "password": "EmpPass123"})
+    emp_token = emp_login.get_json()['access_token']
+
+    # Try to approve a leave (invalid permission)
+    approve = client.put('/leave/999/status',
+        json={"status": "Approved"},
+        headers={"Authorization": f"Bearer {emp_token}"})
+    assert approve.status_code == 403 or approve.status_code == 401
+    
 def test_admin_approve_attendance(client):
     # Login as admin
     login_res = client.post('/login', json={

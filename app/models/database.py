@@ -50,6 +50,8 @@ class Database:
                 status TEXT DEFAULT 'Pending',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                reviewed_by TEXT,                          
+                reviewed_at TIMESTAMP,                     
                 FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')  
 
@@ -63,16 +65,16 @@ class Database:
                 FOREIGN KEY(employee_id) REFERENCES users(employee_id)
             )''')
 
-            self.conn.execute('''CREATE TABLE IF NOT EXISTS performance_reviews (
-                id INTEGER PRIMARY KEY,
-                employee_id TEXT NOT NULL,
-                rating INTEGER NOT NULL,
-                comments TEXT NOT NULL,
-                reviewer_id TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE,
-                FOREIGN KEY(reviewer_id) REFERENCES users(employee_id) ON DELETE CASCADE
-            )''')
+            # self.conn.execute('''CREATE TABLE IF NOT EXISTS performance_reviews (
+            #     id INTEGER PRIMARY KEY,
+            #     employee_id TEXT NOT NULL,
+            #     rating INTEGER NOT NULL,
+            #     comments TEXT NOT NULL,
+            #     reviewer_id TEXT NOT NULL,
+            #     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            #     FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE,
+            #     FOREIGN KEY(reviewer_id) REFERENCES users(employee_id) ON DELETE CASCADE
+            # )''')
 
             self.conn.execute('''CREATE TABLE IF NOT EXISTS employee_profiles (
                 id INTEGER PRIMARY KEY,
