@@ -1,4 +1,3 @@
-
 import sqlite3
 from app.config import Config
 
@@ -13,12 +12,15 @@ class Database:
         self.conn.execute("PRAGMA foreign_keys = ON")
 
         if self.conn.execute("PRAGMA database_list").fetchone()[2] == ":memory:":
-            tables = ['performance_reviews', 'employee_profiles', 'leave_balances',
-                  'leaves', 'reset_tokens', 'users']
+            tables = [
+                'users', 'reset_tokens', 'leaves', 'leave_balances', 'employee_profiles',
+                'attendance', 'payroll_records', 'courses', 'course_submissions'
+            ]
             for table in tables:
                 self.conn.execute(f'DROP TABLE IF EXISTS {table}')
 
         with self.conn:
+            # --- USERS TABLE ---
             self.conn.execute('''CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY,
                 employee_id TEXT UNIQUE NOT NULL,
@@ -33,6 +35,7 @@ class Database:
                 updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             )''')
 
+            # --- RESET TOKENS TABLE ---
             self.conn.execute('''CREATE TABLE IF NOT EXISTS reset_tokens (
                 user_id INTEGER,
                 token TEXT,
@@ -40,6 +43,7 @@ class Database:
                 FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
             )''')
 
+            # --- LEAVES TABLE ---
             self.conn.execute('''CREATE TABLE IF NOT EXISTS leaves (
                 id INTEGER PRIMARY KEY,
                 employee_id TEXT NOT NULL,
@@ -50,12 +54,12 @@ class Database:
                 status TEXT DEFAULT 'Pending',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                reviewed_by TEXT,                          
-                reviewed_at TIMESTAMP,                     
+                reviewed_by TEXT,
+                reviewed_at TIMESTAMP,
                 FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
-            )''')  
+            )''')
 
-            #Leave Balance Table
+            # --- LEAVE BALANCES ---
             self.conn.execute('''CREATE TABLE IF NOT EXISTS leave_balances (
                 employee_id TEXT PRIMARY KEY,
                 annual INTEGER DEFAULT 21,
@@ -65,17 +69,7 @@ class Database:
                 FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
 
-            # self.conn.execute('''CREATE TABLE IF NOT EXISTS performance_reviews (
-            #     id INTEGER PRIMARY KEY,
-            #     employee_id TEXT NOT NULL,
-            #     rating INTEGER NOT NULL,
-            #     comments TEXT NOT NULL,
-            #     reviewer_id TEXT NOT NULL,
-            #     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            #     FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE,
-            #     FOREIGN KEY(reviewer_id) REFERENCES users(employee_id) ON DELETE CASCADE
-            # )''')
-
+            # --- EMPLOYEE PROFILES ---
             self.conn.execute('''CREATE TABLE IF NOT EXISTS employee_profiles (
                 id INTEGER PRIMARY KEY,
                 user_id TEXT UNIQUE NOT NULL,
@@ -92,6 +86,7 @@ class Database:
                 FOREIGN KEY (user_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
 
+            # --- ATTENDANCE ---
             self.conn.execute('''CREATE TABLE IF NOT EXISTS attendance (
                 id INTEGER PRIMARY KEY,
                 employee_id TEXT NOT NULL,
@@ -107,10 +102,11 @@ class Database:
                 FOREIGN KEY (employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
 
+            # --- PAYROLL ---
             self.conn.execute('''CREATE TABLE IF NOT EXISTS payroll_records (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 employee_id TEXT NOT NULL,
-                salary_month TEXT NOT NULL,             
+                salary_month TEXT NOT NULL,
                 basic_salary REAL NOT NULL,
                 bonus REAL DEFAULT 0,
                 deductions REAL DEFAULT 0,
@@ -122,26 +118,35 @@ class Database:
                 FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
 
-
-            # # Add manager_id column to users table if not exists
-            # cursor = self.conn.execute('PRAGMA table_info(users)')
-            # columns = [column[1] for column in cursor.fetchall()]  # Now using cursor
-            # if 'manager_id' not in columns:
-            #     self.conn.execute('ALTER TABLE users ADD COLUMN manager_id TEXT')
-
-            #Course management
+            # --- COURSES TABLE ---
             self.conn.execute('''CREATE TABLE IF NOT EXISTS courses (
                 id INTEGER PRIMARY KEY,
                 name TEXT NOT NULL,
                 description TEXT,
-                type TEXT CHECK(type IN ('Mandatory', 'Optional')),
-                department TEXT,
-                target_role TEXT,
+                type TEXT CHECK(type IN ('Mandatory', 'Optional')) NOT NULL DEFAULT 'Mandatory',
+                department TEXT NOT NULL,
+                target_role TEXT DEFAULT 'Employee',
                 deadline TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )''')
 
-            #Course submissions from employees
+            # ✅ Seed courses if not already present
+            existing = self.conn.execute("SELECT COUNT(*) FROM courses").fetchone()[0]
+            if existing == 0:
+                departments = [
+                    "Information Technology (IT)", "Operations", "Human Resources (HR)",
+                    "Finance and Accounting", "Sales and Marketing"
+                ]
+                topics = ['Cybersecurity', 'Compliance', 'Onboarding', 'Role-Based Training', 'Ethics & Conduct']
+                for dept in departments:
+                    for topic in topics:
+                        self.conn.execute(
+                            "INSERT INTO courses (name, description, type, department) VALUES (?, ?, 'Mandatory', ?)",
+                            (f"{dept} - {topic}", f"{topic} course tailored for {dept}", dept)
+                        )
+                self.conn.commit()
+
+            # --- COURSE SUBMISSIONS TABLE ---
             self.conn.execute('''CREATE TABLE IF NOT EXISTS course_submissions (
                 id INTEGER PRIMARY KEY,
                 employee_id TEXT NOT NULL,
@@ -155,3 +160,5 @@ class Database:
                 FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE,
                 FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE
             )''')
+
+
