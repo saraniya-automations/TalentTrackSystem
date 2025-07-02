@@ -9,16 +9,18 @@ user_model = User()
 def create_user(data):
     try:
         if user_model.get_by_email(data['email']):
-            return {"error": "User with this email already exists."}, 400
+            return {"error":"User with this email already exists."}
         
         password_hash = generate_password_hash(data['password'])
+        status = data.get('status', 'Active')
         employee = user_model.add(
             name=data['name'],
-            email=data['email'],
+            email=data['email'].lower() ,
             phone=data['phone'],
             department=data['department'],
             role=data['role'],
-            password_hash=password_hash
+            password_hash=password_hash,
+            status=status
         )
 
         # ✅ After creating user, initialize leave balances
@@ -36,8 +38,17 @@ def create_user(data):
         raise
 
 
-def get_users():
-    return user_model.get_all()
+# In services/user_service.py
+def get_users(page=1, per_page=10):
+    users = user_model.get_all(page, per_page)
+    total = user_model.get_total_count()
+    return {
+        'items': users,
+        'total': total,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': (total + per_page - 1) // per_page
+    }
 
 def search_users(name):
     return user_model.search(name)

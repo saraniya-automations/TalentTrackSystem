@@ -1031,4 +1031,3 @@ def test_salary_countdown_success(client):
     assert "days_remaining" in data
     assert "expected_amount" in data
     assert "pay_frequency" in data
-

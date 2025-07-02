@@ -24,9 +24,19 @@ class User(Database):
             ''', (employee_id, name, email, phone, department, role, password_hash, status))
         return cursor.lastrowid, employee_id
 
-    def get_all(self):
-        cursor = self.conn.execute('SELECT * FROM users')
+    # In your User model (models/user_model.py)
+    def get_all(self, page=1, per_page=10):
+        offset = (page - 1) * per_page
+        cursor = self.conn.execute(
+            'SELECT * FROM users LIMIT ? OFFSET ?',
+            (per_page, offset)
+        )
         return [dict(row) for row in cursor.fetchall()]
+
+    # Add count method for total pages calculation
+    def get_total_count(self):
+        cursor = self.conn.execute('SELECT COUNT(*) FROM users')
+        return cursor.fetchone()[0]
 
     def search(self, name):
         search_pattern = f"%{name}%"
@@ -39,6 +49,7 @@ class User(Database):
         return dict(row) if row else None
 
     def get_by_email(self, email):
+        email = email.lower()
         return self.get_by_field('email', email)
 
     def get_by_id(self, user_id):

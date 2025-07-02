@@ -47,14 +47,25 @@ def add_user():
     
  
 
-
+@jwt_required()
+@role_required("Admin")
 @user_bp.route('/users', methods=['GET'])
 def get_all_users():
-    users = user_service.get_users()
-    for user in users:
+    # Get pagination parameters from query string
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
+    
+    # Get paginated results
+    result = user_service.get_users(page, per_page)
+    
+    # Remove passwords from the response
+    for user in result['items']:
         user.pop('password_hash', None)
-    return jsonify(users)
+    
+    return jsonify(result)
 
+@jwt_required()
+@role_required("Admin")
 @user_bp.route('/users/search', methods=['GET'])
 def search_user():
     name = request.args.get('name', '')
@@ -119,11 +130,14 @@ def login():
     if not user or not check_password_hash(user['password_hash'], password):
         return jsonify({'error': 'Invalid email or password'}), 401
     
+    if user['status'].lower() != 'active':
+        return jsonify({'error': 'User account is inactive'}), 403
+    
     access_token = create_access_token(identity={
-    'email': user['email'],
-    'role': user['role'],
-    'employee_id': user['employee_id']
-})
+        "employee_id": user['employee_id'],
+        "email": user['email'], 
+        "role": user['role']
+        })
 
     return jsonify({
         'message': 'Login successful',

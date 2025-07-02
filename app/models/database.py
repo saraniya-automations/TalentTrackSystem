@@ -37,7 +37,7 @@ class Database:
                 user_id INTEGER,
                 token TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(user_id) REFERENCES users(id)
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
             )''')
 
             self.conn.execute('''CREATE TABLE IF NOT EXISTS leaves (
@@ -62,7 +62,7 @@ class Database:
                 casual INTEGER DEFAULT 10,
                 sick INTEGER DEFAULT 8,
                 maternity INTEGER DEFAULT 90,
-                FOREIGN KEY(employee_id) REFERENCES users(employee_id)
+                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
 
             # self.conn.execute('''CREATE TABLE IF NOT EXISTS performance_reviews (
@@ -90,6 +90,36 @@ class Database:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(employee_id) ON DELETE CASCADE
+            )''')
+
+            self.conn.execute('''CREATE TABLE IF NOT EXISTS attendance (
+                id INTEGER PRIMARY KEY,
+                employee_id TEXT NOT NULL,
+                punch_in TEXT NOT NULL,
+                punch_out TEXT,
+                date TEXT NOT NULL,
+                status TEXT DEFAULT 'On Time',
+                is_manual INTEGER DEFAULT 0,
+                approval_status TEXT DEFAULT 'Approved',
+                rejection_reason TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
+            )''')
+
+            self.conn.execute('''CREATE TABLE IF NOT EXISTS payroll_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                employee_id TEXT NOT NULL,
+                salary_month TEXT NOT NULL,             
+                basic_salary REAL NOT NULL,
+                bonus REAL DEFAULT 0,
+                deductions REAL DEFAULT 0,
+                net_salary REAL NOT NULL,
+                currency TEXT DEFAULT 'NZD',
+                pay_frequency TEXT DEFAULT 'Monthly',
+                direct_deposit_amount REAL,
+                generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
 
 
