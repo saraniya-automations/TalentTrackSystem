@@ -53,5 +53,9 @@ def create_app(testing=False):
         # Enable CORS
     CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins — change this to specific origin if needed
 
+    # Insert dummy admin user and profile
+    with app.app_context():
+        from app.utils.seed import insert_dummy_admin
+        insert_dummy_admin()
 
     return app

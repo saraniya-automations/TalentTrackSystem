@@ -289,9 +289,9 @@ def test_create_user_duplicate_email(client):
                            headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 400
     data = response.get_json()
-    assert isinstance(data, list)
-    assert "error" in data[0]
-    assert data[0]["error"] == "User with this email already exists."
+    assert isinstance(data, dict)
+    assert 'error' in data
+    assert data['error'] == "User with this email already exists."
 
 
 def test_access_protected_endpoint_without_token(client):
