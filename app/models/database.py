@@ -13,7 +13,7 @@ class Database:
 
         if self.conn.execute("PRAGMA database_list").fetchone()[2] == ":memory:":
             tables = [
-                'users', 'reset_tokens', 'leaves', 'leave_balances', 'employee_profiles',
+                'performance_reviews','users', 'reset_tokens', 'leaves', 'leave_balances', 'employee_profiles',
                 'attendance', 'payroll_records', 'courses', 'course_submissions'
             ]
             for table in tables:
@@ -67,6 +67,19 @@ class Database:
                 sick INTEGER DEFAULT 8,
                 maternity INTEGER DEFAULT 90,
                 FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
+            )''')
+
+            # --- PERFORMANCE REVIEWS ---
+            self.conn.execute('''CREATE TABLE IF NOT EXISTS performance_reviews (
+                id INTEGER PRIMARY KEY,
+                employee_id TEXT NOT NULL,
+                rating INTEGER NOT NULL,
+                comments TEXT NOT NULL,
+                reviewer_id TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE,
+                FOREIGN KEY(reviewer_id) REFERENCES users(employee_id) ON DELETE CASCADE
+
             )''')
 
             # --- EMPLOYEE PROFILES ---
