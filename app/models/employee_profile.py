@@ -58,7 +58,7 @@ class EmployeeProfile(Database):
 
     def get_by_employee_id(self, employee_id):
         cursor = self.conn.execute('''
-            SELECT ep.*, u.employee_id FROM employee_profiles ep
+            SELECT ep.*, u.employee_id, u.name, u.email FROM employee_profiles ep
             JOIN users u ON ep.user_id = u.employee_id
             WHERE u.employee_id = ?
         ''', (employee_id,))
