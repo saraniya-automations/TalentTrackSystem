@@ -1010,3 +1010,67 @@ def test_salary_countdown_success(client):
     assert "days_remaining" in data
     assert "expected_amount" in data
     assert "pay_frequency" in data
+
+def test_search_attendance_by_name_and_period(client):
+    # Admin login
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    # Sample search query
+    response = client.get(
+        '/attendance/search?name=update&start_date=2024-06-01&end_date=2024-06-30',
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == 200
+    data = response.get_json()
+
+    assert isinstance(data, list)
+    if data:
+        for record in data:
+            assert "employee_id" in record
+            assert "date" in record
+            assert "status" in record
+            assert "name" in record
+
+def test_manual_attendance_request_admin(client):
+    # Login as employee
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    token = login_res.get_json()['access_token']
+    payload = {
+        "date": "2025-06-25",
+        "punch_in": "09:30",
+        "punch_out": "17:30",
+        "reason": "Missed punch due to lost card"
+    }
+    res = client.post('/attendance/manual', json=payload,
+                      headers={"Authorization": f"Bearer {token}"})
+    assert res.status_code == 201
+    assert res.get_json()["message"] == "Manual attendance request submitted"
+
+    # Login as admin
+    login_res = client.post('/login', json={
+        "email": "adminleave@example.com",
+        "password": "AdminPass123"
+    })
+    token = login_res.get_json()['access_token']
+
+    # Fetch a pending request first
+    res = client.get('/attendance/requests', headers={"Authorization": f"Bearer {token}"})
+    
+    if pending := res.get_json():
+        record_id = pending[0]["id"]
+        approve_res = client.put(f"/attendance/approve/{record_id}",
+                                 headers={"Authorization": f"Bearer {token}"})
+        assert approve_res.status_code == 200
+        assert approve_res.get_json()["message"] == "Attendance request approved"
+    else:
+        pytest.skip("No pending requests to approve")
+

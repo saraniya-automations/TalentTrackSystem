@@ -72,3 +72,20 @@ def reject_attendance(record_id):
     reason = data.get("rejection_reason", "No reason provided")  # Optional
     attendence_service.reject_request(record_id, reason)
     return jsonify({"message": "Attendance request rejected"}), 200
+
+@attendance_bp.route('/attendance/search', methods=['GET'])
+@jwt_required()
+@role_required("Admin")
+def search_attendance_by_name_and_period():
+    name = request.args.get("name")
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+
+    if not name or not start_date or not end_date:
+        return jsonify({"error": "Missing 'name', 'start', or 'end' query parameter"}), 400
+
+    try:
+        records = attendence_service.get_attendance_by_name_and_period(name, start_date, end_date)
+        return jsonify(records), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
