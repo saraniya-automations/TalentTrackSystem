@@ -86,6 +86,19 @@ class Attendence(Database):
         self.conn.execute(query, (reason, record_id))
         self.conn.commit()
 
+    def getAttendenceNameAndPeriod(self, name, start_date, end_date):
+        query = """
+            SELECT a.*, u.name 
+            FROM 
+            attendance a JOIN users u 
+            ON 
+            a.employee_id = u.employee_id
+            WHERE u.name LIKE ? AND a.date BETWEEN ? AND ?
+        """
+        params = [f"%{name}%", start_date, end_date]
+        cursor = self.conn.execute(query, params)
+        return [dict(row) for row in cursor.fetchall()]
+
 
 
     

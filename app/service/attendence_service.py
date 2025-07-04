@@ -24,3 +24,6 @@ def get_employee_attendance(employee_id, start_date=None, end_date=None, sort_by
 
 def get_pending_requests():
     return attendance_model.get_pending_requests()
+
+def get_attendance_by_name_and_period(name, start_date, end_date):
+    return attendance_model.getAttendenceNameAndPeriod(name, start_date, end_date)
