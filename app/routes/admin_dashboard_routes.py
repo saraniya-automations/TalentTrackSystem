@@ -48,3 +48,34 @@ def get_employee_growth():
             'success': False,
             'error': str(e)
         }), 500
+    
+@admin_bp.route('/dashboard/department-counts', methods=['GET'])
+@jwt_required()
+@role_required('Admin')
+def get_department_counts():
+    """
+    Get employee counts grouped by department
+    Returns:
+        {
+            "success": true,
+            "data": {
+                "HR": 5,
+                "IT": 12,
+                "Finance": 8
+            }
+        }
+    """
+    try:
+        service = AdminDashboardService()
+        department_counts = service.get_employee_counts_by_department()
+        
+        return jsonify({
+            'success': True,
+            'data': department_counts
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500

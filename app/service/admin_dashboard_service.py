@@ -224,3 +224,16 @@ class AdminDashboardService:
             {'name': 'Sat', 'present': 0, 'absent': 0, 'attendance_rate': 0.0, 'date': ''},
             {'name': 'Sun', 'present': 0, 'absent': 0, 'attendance_rate': 0.0, 'date': ''}
         ]
+    
+    def get_employee_counts_by_department(self) -> Dict[str, int]:
+        """
+        Get employee counts by department
+        Returns:
+            Dictionary with department names and employee counts
+            Example: {'HR': 5, 'IT': 12, 'Finance': 8}
+        """
+        try:
+            return self.model.get_employee_counts_by_department()
+        except Exception as e:
+            print(f"Error getting department counts: {str(e)}")
+            return {}  # Return empty dict on error
