@@ -54,6 +54,7 @@ import random
 from werkzeug.security import generate_password_hash
 from app.models.user import User
 from app.models.employee_profile import EmployeeProfile
+<<<<<<< HEAD
 from app.models.salary_model import SalaryModel
 from app.models.performance import Performance
 from app.models.leave import Leave
@@ -79,6 +80,10 @@ def seed_database():
     # seed_courses()
     # seed_course_submissions()
     print("=== Database Seeding Complete ===\n")
+=======
+from app.models.performance import Performance
+from werkzeug.security import generate_password_hash
+>>>>>>> bhagya_dev
 
 def insert_dummy_admin():
     """Your existing admin seeding function"""
@@ -124,6 +129,7 @@ def insert_dummy_admin():
     profile_model.create_profile(user['employee_id'], profile_data)
 
     print("✅ Dummy admin user created successfully.")
+<<<<<<< HEAD
     return user['employee_id']
 
 def seed_employees():
@@ -354,3 +360,10 @@ def seed_payroll():
 
 if __name__ == "__main__":
     seed_database()
+=======
+
+def insert_default_courses():
+    performance_model = Performance()
+    performance_model.seed_default_courses()
+    print("✅ Default department courses inserted.")
+>>>>>>> bhagya_dev

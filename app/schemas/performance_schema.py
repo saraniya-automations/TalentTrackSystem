@@ -1,23 +1,20 @@
-# --- schemas/performance_schema.py ---
-from marshmallow import Schema, fields
+from marshmallow import Schema, fields, validate
 
-class CourseSchema(Schema):
-    id = fields.Int(dump_only=True)
-    name = fields.Str(required=True)
-    description = fields.Str()
-    type = fields.Str(required=True)
-    department = fields.Str()
-    target_role = fields.Str()
-    deadline = fields.Str()
-    created_at = fields.Str(dump_only=True)
+class CompletionSubmissionSchema(Schema):
+    department = fields.Str(required=True)
+    course_name = fields.Str(required=True)
+    completion_note = fields.Str(required=False)
+    file_path = fields.Str(required=False)
+    completed_at = fields.DateTime(required=True)
 
-class CourseSubmissionSchema(Schema):
-    id = fields.Int(dump_only=True)
-    employee_id = fields.Str(required=True)
-    course_id = fields.Int(required=True)
-    completion_notes = fields.Str()
-    status = fields.Str(dump_only=True)
-    reviewer_comment = fields.Str()
-    reviewed_by = fields.Str()
-    reviewed_at = fields.Str()
-    submitted_at = fields.Str(dump_only=True)
+
+class ReviewSchema(Schema):
+    status = fields.Str(
+        required=True,
+        validate=validate.OneOf(["Approved", "Rejected"])
+    )
+    rating = fields.Str(
+        required=True,
+        validate=validate.OneOf(["Excellent", "Good", "Average", "Below Average", "Poor", "1", "2", "3", "4", "5"])
+    )
+    admin_comment = fields.Str(required=True)

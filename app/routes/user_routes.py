@@ -136,7 +136,8 @@ def login():
     access_token = create_access_token(identity={
         "employee_id": user['employee_id'],
         "email": user['email'], 
-        "role": user['role']
+        "role": user['role'],
+        "department": user['department']   # ✅ Add this
         })
 
     return jsonify({
