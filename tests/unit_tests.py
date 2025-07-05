@@ -108,6 +108,42 @@ def test_login_failure(client):
     data = response.get_json()
     assert "error" in data, "error message missing in response"
 
+def test_get_all_profiles(client):
+    """Test retrieving all employee profiles as an admin."""
+
+    # Step 1: Log in as Admin
+    login_response = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+
+    assert login_response.status_code == 200, f"Admin login failed: {login_response.get_json()}"
+    login_data = login_response.get_json()
+    token = login_data.get('access_token')
+    assert token, "Access token not found in login response"
+
+    # Step 2: Use token to access /profiles
+    response = client.get(
+        '/profiles',
+        headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == 200, f"Expected 200 OK but got {response.status_code}"
+    
+    print("STATUS:", response.status_code)
+    print("RESPONSE:", response.data.decode())
+
+    data = response.get_json()
+
+    assert isinstance(data, list), "Expected response to be a list of profiles"
+
+    for profile in data:
+        assert isinstance(profile, dict), "Each profile should be a dictionary"
+        assert 'employee_id' in profile
+        assert 'name' in profile
+        assert 'department' in profile
+        
+
 def test_get_all_users(client):
     response = client.get('/users')
     assert response.status_code == 200, f"Expected 200 OK but got {response.status_code}"

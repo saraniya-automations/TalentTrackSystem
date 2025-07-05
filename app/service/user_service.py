@@ -66,7 +66,7 @@ def update_user(employee_id, data):
         phone=data['phone'],
         department=data['department'],
         role=data['role'],
-        password_hash=generate_password_hash(data['password']) if 'password' in data else None,
+        # password_hash=generate_password_hash(data['password']) if 'password' in data else None,
         status=data.get('status')
     )
 
