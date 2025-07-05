@@ -67,9 +67,9 @@ class User(Database):
             fields.append(f"{field} = ?")
             values.append(value)
 
-        if password_hash:
-            fields.append("password_hash = ?")
-            values.append(password_hash)
+        # if password_hash:
+        #     fields.append("password_hash = ?")
+        #     values.append(password_hash)
         if status:
             fields.append("status = ?")
             values.append(status)

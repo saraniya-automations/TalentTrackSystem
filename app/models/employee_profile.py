@@ -139,7 +139,7 @@ class EmployeeProfile(Database):
 
     def get_all(self, limit, offset, key=''):
         query = '''
-            SELECT ep.*, u.employee_id FROM employee_profiles ep
+            SELECT ep.*, u.employee_id, u.name, u.department FROM employee_profiles ep
             JOIN users u ON ep.user_id = u.employee_id
         '''
         params = []
