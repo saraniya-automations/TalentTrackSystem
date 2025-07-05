@@ -69,18 +69,18 @@ class Database:
                 FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
 
-            # --- PERFORMANCE REVIEWS ---
-            self.conn.execute('''CREATE TABLE IF NOT EXISTS performance_reviews (
-                id INTEGER PRIMARY KEY,
-                employee_id TEXT NOT NULL,
-                rating INTEGER NOT NULL,
-                comments TEXT NOT NULL,
-                reviewer_id TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE,
-                FOREIGN KEY(reviewer_id) REFERENCES users(employee_id) ON DELETE CASCADE
+            # # --- PERFORMANCE REVIEWS ---
+            # self.conn.execute('''CREATE TABLE IF NOT EXISTS performance_reviews (
+            #     id INTEGER PRIMARY KEY,
+            #     employee_id TEXT NOT NULL,
+            #     rating INTEGER NOT NULL,
+            #     comments TEXT NOT NULL,
+            #     reviewer_id TEXT NOT NULL,
+            #     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            #     FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE,
+            #     FOREIGN KEY(reviewer_id) REFERENCES users(employee_id) ON DELETE CASCADE
 
-            )''')
+            # )''')
 
             # --- EMPLOYEE PROFILES ---
             self.conn.execute('''CREATE TABLE IF NOT EXISTS employee_profiles (
@@ -133,45 +133,26 @@ class Database:
 
             # --- COURSES TABLE ---
             self.conn.execute('''CREATE TABLE IF NOT EXISTS courses (
-                id INTEGER PRIMARY KEY,
-                name TEXT NOT NULL,
-                description TEXT,
-                type TEXT CHECK(type IN ('Mandatory', 'Optional')) NOT NULL DEFAULT 'Mandatory',
-                department TEXT NOT NULL,
-                target_role TEXT DEFAULT 'Employee',
-                deadline TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                department TEXT NOT NULL UNIQUE,
+                course_name TEXT NOT NULL
             )''')
-
-            # ✅ Seed courses if not already present
-            existing = self.conn.execute("SELECT COUNT(*) FROM courses").fetchone()[0]
-            if existing == 0:
-                departments = [
-                    "Information Technology (IT)", "Operations", "Human Resources (HR)",
-                    "Finance and Accounting", "Sales and Marketing"
-                ]
-                topics = ['Cybersecurity', 'Compliance', 'Onboarding', 'Role-Based Training', 'Ethics & Conduct']
-                for dept in departments:
-                    for topic in topics:
-                        self.conn.execute(
-                            "INSERT INTO courses (name, description, type, department) VALUES (?, ?, 'Mandatory', ?)",
-                            (f"{dept} - {topic}", f"{topic} course tailored for {dept}", dept)
-                        )
-                self.conn.commit()
 
             # --- COURSE SUBMISSIONS TABLE ---
             self.conn.execute('''CREATE TABLE IF NOT EXISTS course_submissions (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 employee_id TEXT NOT NULL,
-                course_id INTEGER NOT NULL,
-                completion_notes TEXT,
+                department TEXT NOT NULL,
+                course_name TEXT NOT NULL,
+                completion_note TEXT,
+                file_path TEXT,
+                completed_at TIMESTAMP,
                 status TEXT DEFAULT 'Pending',
-                reviewer_comment TEXT,
+                rating TEXT,
+                admin_comment TEXT,
                 reviewed_by TEXT,
-                reviewed_at TEXT,
-                submitted_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE,
-                FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE
+                reviewed_at TIMESTAMP,
+                FOREIGN KEY(employee_id) REFERENCES users(employee_id)
             )''')
 
 

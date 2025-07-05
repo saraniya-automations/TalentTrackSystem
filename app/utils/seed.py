@@ -2,6 +2,7 @@
 
 from app.models.user import User
 from app.models.employee_profile import EmployeeProfile
+from app.models.performance import Performance
 from werkzeug.security import generate_password_hash
 
 def insert_dummy_admin():
@@ -47,3 +48,8 @@ def insert_dummy_admin():
     profile_model.create_profile(user['employee_id'], profile_data)
 
     print("✅ Dummy admin user created successfully.")
+
+def insert_default_courses():
+    performance_model = Performance()
+    performance_model.seed_default_courses()
+    print("✅ Default department courses inserted.")

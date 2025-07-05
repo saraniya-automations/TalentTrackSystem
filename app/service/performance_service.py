@@ -1,69 +1,46 @@
-# --- app/services/performance_service.py ---
-
 from app.models.performance import Performance
-from app.models.user import User
 
 performance_model = Performance()
-user_model = User()
 
-def get_department_courses(employee_id):
-    """
-    Returns all mandatory courses assigned to the department of the logged-in user.
-    """
-    user = user_model.get_by_employee_id(employee_id)
-    if not user:
-        raise LookupError("User not found")
-    
-    department = user.get('department')
-    return performance_model.get_courses_by_department(department)
+class PerformanceService:
+    def get_course_by_department(self, department):
+        return performance_model.get_course_by_department(department)
 
-def submit_course(employee_id, course_id, notes):
-    """
-    Allows the logged-in employee to submit course completion for a given course ID.
-    """
-    return performance_model.submit_course_completion(employee_id, course_id, notes)
+    def assign_course_to_user_if_exists(self, employee_id, department):
+        performance_model.assign_course_to_user_if_exists(employee_id, department)
 
-def get_my_submissions(employee_id):
-    """
-    Returns all submissions (completed courses) by the logged-in employee.
-    """
-    return performance_model.get_my_submissions(employee_id)
+    def submit_completion(self, employee_id, data):
+        performance_model.submit_completion(
+            employee_id=employee_id,
+            department=data['department'],
+            course_name=data['course_name'],
+            note=data.get('completion_note'),
+            file_path=data.get('file_path'),
+            date=data['completed_at']
+        )
 
-def get_pending_submissions():
-    """
-    Returns all course submissions that are still pending review.
-    Admins can use this to view what needs approval.
-    """
-    return performance_model.get_pending_submissions()
+    def get_pending_reviews(self):
+        return performance_model.get_pending_submissions()
 
-def review_submission(submission_id, status, comment, reviewer_id):
-    """
-    Admin reviews and approves/rejects a course submission.
-    - Cannot approve own submissions.
-    - Only Admins can approve/reject.
-    """
-    submission = performance_model.get_submission_by_id(submission_id)
-    if not submission:
-        raise LookupError("Submission not found")
+    def review_submission(self, submission_id, data, admin_id):
+        performance_model.review_submission(
+            submission_id=submission_id,
+            status=data['status'],
+            rating=data['rating'],
+            comment=data['admin_comment'],
+            admin_id=admin_id
+        )
 
-    applicant = user_model.get_by_employee_id(submission['employee_id'])
-    reviewer = user_model.get_by_employee_id(reviewer_id)
+    def get_all_submissions(self):
+        return performance_model.get_all_submissions()
 
-    if not applicant or not reviewer:
-        raise LookupError("User or reviewer not found")
+    def get_rating_distribution(self):
+        return performance_model.get_rating_distribution()
 
-    if reviewer['employee_id'] == applicant['employee_id']:
-        raise PermissionError("Admins cannot approve their own submissions")
+    def get_completion_by_department(self):
+        return performance_model.get_completion_by_department()
 
-    if reviewer['role'].lower() != "admin":
-        raise PermissionError("Only admins can approve submissions")
+    def get_submissions_by_employee(self, employee_id):
+        return performance_model.get_submissions_by_employee(employee_id)
 
-    if status not in ["Approved", "Rejected"]:
-        raise ValueError("Invalid status. Must be Approved or Rejected")
-
-    performance_model.update_submission_status(
-        submission_id=submission_id,
-        status=status,
-        comment=comment,
-        reviewer_id=reviewer_id
-    )
+performance_service = PerformanceService()

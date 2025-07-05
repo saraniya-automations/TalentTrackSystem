@@ -58,4 +58,8 @@ def create_app(testing=False):
         from app.utils.seed import insert_dummy_admin
         insert_dummy_admin()
 
+    with app.app_context():
+        from app.utils.seed import insert_default_courses
+        insert_default_courses()
+
     return app

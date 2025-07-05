@@ -3,6 +3,8 @@ from app.models.user import User
 from app.utils.logger import logger
 import sqlite3
 from app.models.database import Database  # ✅ required for leave balance
+from app.models.performance import Performance
+performance_model = Performance()
 
 user_model = User()
 
@@ -27,6 +29,9 @@ def create_user(data):
         db = Database()
         db.conn.execute('INSERT INTO leave_balances (employee_id) VALUES (?)', (employee[1],))
         db.conn.commit()
+
+        # Automatically assign department-specific course
+        performance_model.assign_course_to_user_if_exists(employee[1], data['department'])
         
         # return {"employee": employee}, 201
         return employee, 201
