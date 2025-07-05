@@ -179,4 +179,40 @@ def reset_password():
     user_service.update_password(employee_id, new_password)
     return jsonify({'message': 'Password updated successfully'}), 200
 
+@jwt_required()
+@role_required("Admin")
+@user_bp.route('/users/<string:employee_id>', methods=['GET'])
+def get_user_by_employee_id(employee_id):
+    # Minimal validation - at least ensure it's not empty
+    if not employee_id or not employee_id.strip():
+        return jsonify({
+            'error': 'Employee ID is required',
+            'employee_id_provided': employee_id,
+            'status': 'error'
+        }), 400
+
+    try:
+        # Keep your existing service call
+        user = user_service.get_by_employee_id(employee_id)
+        
+        if not user:
+            return jsonify({
+                'error': 'User not found',
+                'employee_id': employee_id,
+                'status': 'not_found'
+            }), 404
+            
+        # Return the user data with success status
+        return jsonify({
+            'data': user,
+            'status': 'success'
+        })
+        
+    except Exception as e:
+        # Basic error handling without exposing internals
+        return jsonify({
+            'error': 'Could not process request',
+            'status': 'error'
+        }), 500
+    
 
