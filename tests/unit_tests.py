@@ -1142,5 +1142,57 @@ def test_get_pending_attendance_requests(client):
         for request in data:
             assert "employee_id" in request
             assert "employee_name" in request
+
+def test_get_dashboard_stats(client):
+    # Admin login
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+    
+    # Fetch dashboard stats
+    response = client.get('/dashboard/stats', headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+
+def test_get_department_counts(client):
+    # Admin login
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+    # Fetch department counts
+    response = client.get('/dashboard/department-counts', headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    data = response.get_json()
+
+def test_employee_growth_chart(client):    
+    # Admin login
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+    # Fetch employee growth chart
+    response = client.get('/dashboard/employee-growth', headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+
+def test_get_weekly_attendance_chart(client):   
+    # Admin login
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+    # Fetch weekly attendance chart
+    response = client.get('/attendance/weekly-chart', headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+
+
     
 
