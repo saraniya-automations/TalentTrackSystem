@@ -1074,3 +1074,73 @@ def test_manual_attendance_request_admin(client):
     else:
         pytest.skip("No pending requests to approve")
 
+def test_get_user_by_employee_id(client):
+    # Admin login
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+
+    # Get test user
+    user_model = User()
+    test_user = user_model.get_by_email("leaveuser@example.com")
+    assert test_user is not None
+    emp_id = test_user['employee_id']
+    
+    # Make request
+    response = client.get(
+        f'/users/{emp_id}',  # Changed to match your actual endpoint
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    # Verify response
+    assert response.status_code == 200
+    response_data = response.get_json()
+    
+   
+    if 'data' in response_data:  
+        user_data = response_data['data']
+    else:  
+        user_data = response_data
+    
+    assert isinstance(user_data, dict)
+    assert 'employee_id' in user_data  
+    assert user_data['employee_id'] == emp_id
+
+def test_get_user_by_employee_id_not_found(client):
+    # Admin login
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+    # Use a non-existent employee ID
+    non_existent_emp_id = 999999
+    response = client.get(f'/users/{non_existent_emp_id}', headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 404
+    data = response.get_json()
+    assert "error" in data
+    assert data["error"] == "User not found"
+
+def test_get_pending_attendance_requests(client):
+    # Admin login
+    login_res = client.post('/login', json={
+        "email": "testadmin@example.com",
+        "password": "AdminPassword123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.get_json()['access_token']
+    # Fetch pending requests
+    response = client.get('/attendance/requests', headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    data = response.get_json()
+    assert isinstance(data, list)
+    if data:
+        for request in data:
+            assert "employee_id" in request
+            assert "employee_name" in request
+    
+

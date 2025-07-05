@@ -51,7 +51,10 @@ class Attendence(Database):
     #     return [dict(row) for row in cur.fetchall()]
 
     def get_pending_requests(self):
-        cur = self.conn.execute('''SELECT * FROM attendance WHERE is_manual = 1 AND approval_status = 'Pending' ''')
+        cur = self.conn.execute('''SELECT a.*, u.name as employee_name
+                                FROM attendance a JOIN users u 
+                                ON a.employee_id = u.employee_id
+                                WHERE is_manual = 1 AND approval_status = 'Pending' ''')
         return [dict(row) for row in cur.fetchall()]
     
     def get_by_employee(self, employee_id, start_date=None, end_date=None, sort_by="punch_in", order="asc"):
@@ -78,10 +81,10 @@ class Attendence(Database):
     def reject_request(self, record_id, reason):
         query = """
             UPDATE attendance
-            SET status = 'Rejected',
+            SET approval_status = 'Rejected',
                 rejection_reason = ?,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = ? AND status = 'Pending'
+            WHERE id = ? AND approval_status = 'Pending'
         """
         self.conn.execute(query, (reason, record_id))
         self.conn.commit()
