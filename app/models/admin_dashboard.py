@@ -160,3 +160,19 @@ class AdminDashboard(Database):
             ORDER BY created_at ASC
         ''')
         return [dict(row) for row in cur.fetchall()]
+    
+    def get_employee_counts_by_department(self) -> Dict[str, int]:
+        """
+        Get employee counts grouped by department
+        Returns:
+            Dictionary with department names as keys and employee counts as values
+            Example: {'HR': 5, 'IT': 12, 'Finance': 8}
+        """
+        cur = self.conn.execute('''
+            SELECT department, COUNT(*) as count 
+            FROM users 
+            WHERE status = 'Active' 
+            AND role != 'Admin'
+            GROUP BY department
+        ''')
+        return {row['department']: row['count'] for row in cur.fetchall()}
