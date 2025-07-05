@@ -33,3 +33,14 @@ class SalaryService:
 
     def get_latest_salary(self, employee_id):
         return self.salary_model.get_latest_salary(employee_id)
+    
+    def get_all_employees_salary_records(self, page=1, per_page=10):
+        salaries = self.salary_model.get_all(page, per_page)
+        total = self.salary_model.get_total_count()
+        return {
+        'items': salaries,
+        'total': total,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': (total + per_page - 1) // per_page
+    }

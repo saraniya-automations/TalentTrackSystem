@@ -62,3 +62,15 @@ class SalaryModel(Database):
         ''', (employee_id,))
         row = cur.fetchone()
         return dict(row) if row else None
+    
+    def get_all(self, page=1, per_page=10):
+        offset = (page - 1) * per_page
+        cursor = self.conn.execute(
+            'SELECT * FROM payroll_records ORDER BY generated_at LIMIT ? OFFSET ?',
+            (per_page, offset)
+        )
+        return [dict(row) for row in cursor.fetchall()]
+    
+    def get_total_count(self):
+        cursor = self.conn.execute('SELECT COUNT(*) FROM payroll_records')
+        return cursor.fetchone()[0]
