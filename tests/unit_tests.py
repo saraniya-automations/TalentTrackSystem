@@ -1075,6 +1075,7 @@ def test_manual_attendance_request_admin(client):
     else:
         pytest.skip("No pending requests to approve")
 
+
 #Performance
 def test_get_my_mandatory_course(client):
     db = Database()
