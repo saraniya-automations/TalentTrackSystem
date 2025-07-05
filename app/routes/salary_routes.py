@@ -104,6 +104,17 @@ def get_employee_salary_records(employee_id):
         records = salary_service.get_all_salary(employee_id)
         return jsonify(records), 200
 
+@salary_bp.route('/salary/employee', methods=['GET'])
+@jwt_required()
+@role_required('Admin')
+def get_all_salary_records():
+     # Get pagination parameters from query string
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
+    # Get paginated results
+    result = salary_service.get_all_employees_salary_records(page, per_page)
+    return jsonify(result)
+    
 
 @salary_bp.route('/salary/export-pdf', methods=['GET'])
 @jwt_required()
