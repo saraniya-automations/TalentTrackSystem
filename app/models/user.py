@@ -22,6 +22,12 @@ class User(Database):
                     role, password_hash, status
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (employee_id, name, email, phone, department, role, password_hash, status))
+
+            # ✅ Automatically create leave balances for the user
+            self.conn.execute('''
+                INSERT OR IGNORE INTO leave_balances (employee_id)
+                VALUES (?)
+            ''', (employee_id,))
         return cursor.lastrowid, employee_id
 
     # In your User model (models/user_model.py)

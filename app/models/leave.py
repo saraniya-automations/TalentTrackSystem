@@ -60,3 +60,15 @@ class Leave(Database):
         )
         row = cursor.fetchone()
         return dict(row) if row else None
+    
+    def get_leaves_by_employee_name_and_date(self, name, start_date, end_date):
+        cursor = self.conn.execute('''
+            SELECT l.leave_type, l.start_date, l.end_date, l.reason, u.name
+            FROM leaves l
+            JOIN users u ON l.employee_id = u.employee_id
+            WHERE u.name LIKE ?
+            AND l.start_date >= ? AND l.end_date <= ?
+            ORDER BY l.start_date ASC
+        ''', (f'%{name}%', start_date, end_date))
+        return [dict(row) for row in cursor.fetchall()]
+

@@ -70,3 +70,17 @@ def get_pending_leaves():
         return jsonify(pending), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@leave_bp.route('/leave/search', methods=['GET'])
+@jwt_required()
+@role_required('Admin')
+def search_employee_leaves():
+    name = request.args.get('name')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    if not name or not start_date or not end_date:
+        return jsonify({'error': 'name, start_date, and end_date are required as query params'}), 400
+
+    result, code = leave_service.get_employee_leave_details(name, start_date, end_date)
+    return jsonify(result), code

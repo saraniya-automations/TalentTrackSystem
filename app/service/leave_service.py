@@ -64,3 +64,19 @@ class LeaveService:
 
     def get_pending_leaves(self):
         return self.leave_model.get_pending()
+    
+    def get_employee_leave_details(self, name, start_date, end_date):
+        if not name or not start_date or not end_date:
+            return {"error": "Name, start date, and end date are required."}, 400
+        try:
+            # Optionally validate dates
+            parse_date(start_date)
+            parse_date(end_date)
+        except Exception:
+            return {"error": "Invalid date format."}, 400
+
+        results = self.leave_model.get_leaves_by_employee_name_and_date(name, start_date, end_date)
+        if not results:
+            return {"message": "No leave records found for given criteria."}, 404
+        return results, 200
+
