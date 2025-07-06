@@ -57,6 +57,7 @@ def get_all_users():
     
     # Get paginated results
     result = user_service.get_users(page, per_page)
+
     
     # Remove passwords from the response
     for user in result['items']:
@@ -143,6 +144,7 @@ def login():
     return jsonify({
         'message': 'Login successful',
         'employee_id': user['employee_id'],
+        'name': user['name'],
         'role': user['role'],
         'status': user['status'],
         'access_token': access_token
