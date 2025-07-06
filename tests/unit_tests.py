@@ -6,7 +6,6 @@ from app.models.employee_profile import EmployeeProfile
 from werkzeug.security import generate_password_hash
 import uuid 
 from app.models.database import Database
-from datetime import datetime
 
 
 @pytest.fixture
@@ -1148,91 +1147,12 @@ def test_get_user_by_employee_id(client):
 
 def test_get_user_by_employee_id_not_found(client):
     # Admin login
-
-#Performance
-def test_get_my_mandatory_course(client):
-    db = Database()
-    user_model = User()
-    user = user_model.get_by_email("testemployee@example.com")
-
-    if user:
-        if user["status"] != "Active":
-            db.conn.execute("UPDATE users SET status = 'Active' WHERE employee_id = ?", (user["employee_id"],))
-        if user["department"] != "IT":
-            db.conn.execute("UPDATE users SET department = 'IT' WHERE employee_id = ?", (user["employee_id"],))
-        db.conn.commit()
-
-    login_res = client.post('/login', json={
-        "email": "testemployee@example.com",
-        "password": "Password123"
-    })
-    assert login_res.status_code == 200, f"Login failed: {login_res.get_json()}"
-    token = login_res.get_json()['access_token']
-
-    res = client.get('/performance/my-course', headers={
-        "Authorization": f"Bearer {token}"
-    })
-    assert res.status_code == 200
-    data = res.get_json()
-    assert data['department'] == "IT"
-    assert data['mandatory_course'] == "Cybersecurity"
-
-
-
-def test_submit_course_completion(client):
-    login_res = client.post('/login', json={
-        "email": "testemployee@example.com",
-        "password": "Password123"
-    })
-    assert login_res.status_code == 200
-    token = login_res.get_json()['access_token']
-
-    payload = {
-        "department": "IT",
-        "course_name": "Cybersecurity",
-        "completion_note": "Completed via internal LMS",
-        "file_path": "/uploads/cyber_cert.pdf",
-        "completed_at": datetime.now().isoformat()
-    }
-
-    res = client.post('/performance/submit', json=payload, headers={
-        "Authorization": f"Bearer {token}"
-    })
-
-    assert res.status_code == 201
-    data = res.get_json()
-    assert "message" in data
-    assert data["message"] == "Course completion submitted successfully"
-
-def test_view_my_submissions(client):
-    login_res = client.post('/login', json={
-        "email": "testemployee@example.com",
-        "password": "Password123"
-    })
-    assert login_res.status_code == 200
-    token = login_res.get_json()['access_token']
-
-    res = client.get('/performance/my-submissions', headers={
-        "Authorization": f"Bearer {token}"
-    })
-
-    assert res.status_code == 200
-    submissions = res.get_json()
-    assert isinstance(submissions, list)
-    if submissions:
-        assert "course_name" in submissions[0]
-        assert "status" in submissions[0]
-        assert "employee_id" in submissions[0]
-
-def test_admin_review_submission(client):
-
     login_res = client.post('/login', json={
         "email": "testadmin@example.com",
         "password": "AdminPassword123"
     })
     assert login_res.status_code == 200
     token = login_res.get_json()['access_token']
-
     # Use a non-existent employee ID
     non_existent_emp_id = 999999
     response = client.get(f'/users/{non_existent_emp_id}', headers={"Authorization": f"Bearer {token}"})
@@ -1243,33 +1163,6 @@ def test_admin_review_submission(client):
 
 def test_get_pending_attendance_requests(client):
     # Admin login
-
-
-    res = client.get('/performance/submissions/pending', headers={
-        "Authorization": f"Bearer {token}"
-    })
-
-    assert res.status_code == 200
-    pending = res.get_json()
-
-    if pending:
-        submission_id = pending[0]["id"]
-        review_payload = {
-            "status": "Approved",
-            "rating": "Excellent",
-            "admin_comment": "Well done on completing the course"
-        }
-
-        review_res = client.put(f'/performance/submissions/{submission_id}/review',
-                                json=review_payload,
-                                headers={"Authorization": f"Bearer {token}"})
-        assert review_res.status_code == 200
-        data = review_res.get_json()
-        assert data["message"] == "Review submitted successfully"
-    else:
-        pytest.skip("No pending submissions to review")
-
-def test_report_ratings_distribution(client):
     login_res = client.post('/login', json={
         "email": "testadmin@example.com",
         "password": "AdminPassword123"
@@ -1335,14 +1228,3 @@ def test_get_weekly_attendance_chart(client):
     # Fetch weekly attendance chart
     response = client.get('/attendance/weekly-chart', headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
-
-    res = client.get('/performance/reports/ratings', headers={
-        "Authorization": f"Bearer {token}"
-    })
-
-    assert res.status_code == 200
-    data = res.get_json()
-    assert isinstance(data, list)
-    if data:
-        assert "rating" in data[0]
-        assert "count" in data[0]
