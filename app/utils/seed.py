@@ -131,7 +131,7 @@ def seed_leaves():
     leave_model = Leave()
     
     employees = user_model.get_all()
-    leave_types = ["Annual", "Sick", "Casual", "Maternity"]
+    leave_types = ["annual", "casual", "sick", "maternity"]
     statuses = ["Approved", "Pending", "Rejected"]
     
     for emp in employees:
@@ -309,6 +309,11 @@ if __name__ == "__main__":
     seed_database()
 
 def insert_default_courses():
-    performance_model = Performance()
-    performance_model.seed_default_courses()
-    print("✅ Default department courses inserted.")
+    p = Performance()
+
+    # ✅ Check if courses table already has entries
+    result = p.conn.execute('SELECT COUNT(*) FROM courses').fetchone()
+    course_count = result[0] if result else 0
+
+    if course_count == 0:
+        p.seed_default_courses()

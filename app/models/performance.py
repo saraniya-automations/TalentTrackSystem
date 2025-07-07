@@ -7,7 +7,7 @@ DEPARTMENT_COURSE_MAP = {
     "Operations": "Compliance",
     "HR": "Onboarding",
     "Finance": "Role-Based Training",
-    "Sales and Marketing": "Ethics & Conduct"
+    "Sales": "Ethics & Conduct"
 }
 
 class Performance(Database):

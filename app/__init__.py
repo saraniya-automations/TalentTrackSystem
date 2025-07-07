@@ -62,8 +62,8 @@ def create_app(testing=False):
         from app.utils.seed import seed_database
         seed_database()
 
-    # with app.app_context():
-    #     from app.utils.seed import insert_default_courses
-    #     insert_default_courses()
+    with app.app_context():
+         from app.utils.seed import insert_default_courses
+         insert_default_courses()
 
     return app
