@@ -66,8 +66,21 @@ def update_leave_status(leave_id):
 @role_required('Admin')
 def get_pending_leaves():
     try:
-        pending = leave_service.get_pending_leaves()
-        return jsonify(pending), 200
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+
+        all_leaves = leave_service.get_pending_leaves()
+        total = len(all_leaves)
+        start = (page - 1) * per_page
+        end = start + per_page
+
+        return jsonify({
+            "items": all_leaves[start:end],
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "pages": (total + per_page - 1) // per_page
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

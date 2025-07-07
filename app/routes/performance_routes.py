@@ -58,8 +58,21 @@ def view_my_submissions():
 @role_required("Admin")
 def view_pending_submissions():
     try:
-        pending = performance_service.get_pending_reviews()
-        return jsonify(pending), 200
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+
+        all_submissions = performance_service.get_pending_reviews()
+        total = len(all_submissions)
+        start = (page - 1) * per_page
+        end = start + per_page
+
+        return jsonify({
+            "items": all_submissions[start:end],
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "pages": (total + per_page - 1) // per_page
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -87,8 +100,21 @@ def review_submission(submission_id):
 @role_required("Admin")
 def view_all_submissions():
     try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+
         all_submissions = performance_service.get_all_submissions()
-        return jsonify(all_submissions), 200
+        total = len(all_submissions)
+        start = (page - 1) * per_page
+        end = start + per_page
+
+        return jsonify({
+            "items": all_submissions[start:end],
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "pages": (total + per_page - 1) // per_page
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
