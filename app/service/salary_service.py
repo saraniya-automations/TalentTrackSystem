@@ -23,9 +23,21 @@ class SalaryService:
 
     def get_salary_by_month(self, employee_id, month):
         return self.salary_model.get_salary_by_month(employee_id, month)
+    
+    def get_salary_by_month_payslip(self, employee_id, month):
+        return self.salary_model.get_salary_by_month_payslip(employee_id, month)
 
-    def get_all_salary(self, employee_id):
-        return self.salary_model.get_all_salary(employee_id)
+    def get_all_salary(self, employee_id,page=1, per_page=10):
+        # return self.salary_model.get_all_salary(employee_id)
+        users = self.salary_model.get_all_salary(page, per_page,employee_id)
+        total = self.salary_model.get_total_count()
+        return {    
+            'items': users,
+            'total': total,
+            'page': page,
+            'per_page': per_page,
+        }
+       
 
     def get_filtered_salary_records(self, employee_id=None, month=None):
         return self.salary_model.fetch_salary_records(employee_id, month)

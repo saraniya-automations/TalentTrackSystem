@@ -145,7 +145,7 @@ class EmployeeProfile(Database):
         params = []
         
         if key:
-            query += ' WHERE u.employee_id LIKE ?'
+            query += ' WHERE u.name LIKE ?'
             params.append(f'%{key}%')
         
         query += ' LIMIT ? OFFSET ?'
