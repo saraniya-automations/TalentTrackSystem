@@ -23,6 +23,15 @@ class PerformanceService:
         return performance_model.get_pending_submissions()
 
     def review_submission(self, submission_id, data, admin_id):
+        # Fetch the submission to check who submitted it
+        submissions = performance_model.get_all_submissions()
+        submission = next((s for s in submissions if s['id'] == submission_id), None)
+
+        if not submission:
+            raise ValueError("Submission not found.")
+
+        if submission['employee_id'] == admin_id:
+            raise PermissionError("Admins cannot review their own submissions.")
         performance_model.review_submission(
             submission_id=submission_id,
             status=data['status'],

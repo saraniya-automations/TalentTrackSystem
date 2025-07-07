@@ -24,8 +24,8 @@ def get_my_mandatory_course():
 def submit_course_completion():
     identity = get_jwt_identity()
 
-    if identity.get("role") != "Employee":
-        return jsonify({"error": "Only employees can submit course completion"}), 403
+    if identity.get("role") not in ["Employee", "Admin"]:
+        return jsonify({"error": "Unauthorized role"}), 403
 
     data = request.get_json()
     if not data:
