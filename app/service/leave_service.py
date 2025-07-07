@@ -79,4 +79,15 @@ class LeaveService:
         if not results:
             return {"message": "No leave records found for given criteria."}, 404
         return results, 200
+    
+    def get_user_leave_details(self, employee_id):
+        user = self.user_model.get_by_employee_id(employee_id)
+        if not user:
+            return {"error": "User not found"}, 404
+
+        results = self.leave_model.get_leaves_by_employee_id(employee_id)
+        if not results:
+            return {"message": "No leave records found for user."}, 404
+        return results, 200
+
 

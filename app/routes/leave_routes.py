@@ -44,6 +44,18 @@ def get_balance():
         return jsonify({'error': 'Balance not found'}), 404
     return jsonify(balance), 200
 
+@leave_bp.route('/leave/my', methods=['GET'])
+@jwt_required()
+def get_my_leaves():
+    identity = get_jwt_identity()
+    employee_id = identity.get('employee_id')
+    if not employee_id:
+        return jsonify({'error': 'Invalid token: employee_id missing'}), 401
+
+    result, code = leave_service.get_user_leave_details(employee_id)
+    return jsonify(result), code
+
+
 @leave_bp.route('/leave/<int:leave_id>/status', methods=['PUT'])
 @jwt_required()
 @role_required('Admin')

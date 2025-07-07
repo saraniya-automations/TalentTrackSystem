@@ -71,4 +71,15 @@ class Leave(Database):
             ORDER BY l.start_date ASC
         ''', (f'%{name}%', start_date, end_date))
         return [dict(row) for row in cursor.fetchall()]
+    
+    def get_leaves_by_employee_id(self, employee_id):
+        cursor = self.conn.execute('''
+            SELECT l.leave_type, l.start_date, l.end_date, l.reason, u.name
+            FROM leaves l
+            JOIN users u ON l.employee_id = u.employee_id
+            WHERE u.employee_id = ?
+            ORDER BY l.start_date DESC
+        ''', (employee_id,))
+        return [dict(row) for row in cursor.fetchall()]
+
 
