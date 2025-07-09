@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.service import user_service
-from app.schemas.user_schema import UserSchema
+from app.schemas.user_schema import UserSchema, UserUpdateSchema
 from app.utils.logger import logger
 from werkzeug.security import check_password_hash
 from app.utils.token_util import generate_token
@@ -78,6 +78,7 @@ def search_user():
     
     return jsonify(users)
 
+user_update_schema = UserUpdateSchema()
 
 @user_bp.route('/users/<string:employee_id>', methods=['PUT'])
 @jwt_required()
@@ -85,7 +86,7 @@ def search_user():
 def update_user(employee_id):
     data = request.get_json()
 
-    if (errors := user_schema.validate(data)):
+    if (errors := user_update_schema.validate(data)):
         return jsonify({'errors': errors}), 400
 
     # Find user by employee_id first
@@ -105,8 +106,8 @@ def update_user(employee_id):
 @role_required("Admin")
 def user_status(employee_id):
     try:
-        user_service.delete_user(employee_id)
-        return jsonify({'message': 'User deleted'})
+        user_service.inactive_user(employee_id)
+        return jsonify({'message': 'User deactivated'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     

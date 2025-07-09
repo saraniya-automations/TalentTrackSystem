@@ -35,7 +35,8 @@ class Attendence(Database):
                 data['date'],
                 data.get('status', 'Manual Edit'),
                 1,
-                'Pending',
+                # 'Pending',
+                data.get('approval_status', 'Pending'),
                 data.get('reason', None)
             ))
 

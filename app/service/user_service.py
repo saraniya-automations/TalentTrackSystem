@@ -71,8 +71,8 @@ def update_user(employee_id, data):
     )
 
 
-def delete_user(employee_id):
-    user_model.delete(employee_id)
+def inactive_user(employee_id):
+    user_model.inactive(employee_id)
 
 def hard_delete_user(employee_id):
     user_model.hard_delete_by_employee_id(employee_id)

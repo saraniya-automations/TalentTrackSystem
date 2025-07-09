@@ -31,6 +31,10 @@ def add_salary_record():
 @salary_bp.route('/salary/my-records', methods=['GET'])
 @jwt_required()
 def view_my_salary():
+    # Get pagination parameters from query string
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
+    
     identity = get_jwt_identity()
     employee_id = identity['employee_id']
     month = request.args.get('month')
@@ -39,7 +43,7 @@ def view_my_salary():
         record = salary_service.get_salary_by_month(employee_id, month)
         return jsonify(record or {"message": "No record found"}), 200
     else:
-        records = salary_service.get_all_salary(employee_id)
+        records = salary_service.get_all_salary(employee_id,page, per_page)
         return jsonify(records), 200
 
 @salary_bp.route('/salary/my-records/payslip', methods=['GET'])
@@ -59,9 +63,9 @@ def download_payslip():
         return jsonify({"message": "Employee not found"}), 404
 
     employee_id = user['employee_id']
-    record = salary_service.get_salary_by_month(employee_id, month)
+    records = salary_service.get_salary_by_month(employee_id, month)
 
-    if not record:
+    if not records:
         return jsonify({"message": "No salary record found for the specified month"}), 404
 
     # Generate PDF
@@ -69,17 +73,48 @@ def download_payslip():
     p = canvas.Canvas(pdf_buffer, pagesize=A4)
     p.setFont("Helvetica", 12)
 
-    p.drawString(50, 800, f"Payslip for: {user['name']} ({employee_id})")
-    p.drawString(50, 780, f"Month: {record['salary_month']}")
-    p.drawString(50, 760, f"Basic Salary: {record['basic_salary']} {record['currency']}")
-    p.drawString(50, 740, f"Bonus: {record['bonus']} {record['currency']}")
-    p.drawString(50, 720, f"Deductions: {record['deductions']} {record['currency']}")
-    p.drawString(50, 700, f"Net Pay: {record['direct_deposit_amount']} {record['currency']}")
-    p.drawString(50, 680, f"Pay Frequency: {record['pay_frequency']}")
+    y = 800
+    p.drawString(50, y, f"Payslip for: {user['name']} ({employee_id})")
+    y -= 20
+
+    total_basic = 0
+    total_bonus = 0
+    total_deductions = 0
+    total_net = 0
+
+    for i, rec in enumerate(records, start=1):
+        basic = rec['basic_salary']
+        bonus = rec['bonus']
+        deductions = rec['deductions']
+        net = rec['direct_deposit_amount']
+
+        total_basic += basic
+        total_bonus += bonus
+        total_deductions += deductions
+        total_net += net
+
+        p.drawString(50, y, f"Entry {i}: {rec['salary_month']} - {rec['pay_frequency']}")
+        y -= 20
+        p.drawString(50, y, f"Basic: {basic} {rec['currency']},")
+        y -= 20
+        p.drawString(50, y, f"Bonus: {bonus} {rec['currency']}, Deductions: {deductions} {rec['currency']}, Net: {net} {rec['currency']}")
+        y -= 30
+
+    # Summary
+    p.drawString(50, y, "-" * 45)
+    y -= 20
+    p.drawString(50, y, f"Total Basic: {total_basic}")
+    y -= 20
+    p.drawString(50, y, f"Total Bonus: {total_bonus}")
+    y -= 20
+    p.drawString(50, y, f"Total Deductions: {total_deductions}")
+    y -= 20
+    p.drawString(50, y, f"Total Net Pay: {total_net}")
 
     p.showPage()
     p.save()
     pdf_buffer.seek(0)
+
 
     filename = f"Payslip_{employee_id}_{month}.pdf"
 
@@ -115,7 +150,6 @@ def get_all_salary_records():
     result = salary_service.get_all_employees_salary_records(page, per_page)
     return jsonify(result)
     
-
 @salary_bp.route('/salary/export-pdf', methods=['GET'])
 @jwt_required()
 @role_required('Admin')

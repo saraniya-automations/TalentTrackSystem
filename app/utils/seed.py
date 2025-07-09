@@ -14,6 +14,13 @@ from app.models.attendence import Attendence
 def seed_database():
     """Seed all database tables with dummy data"""
     print("\n=== Seeding Database ===")
+    print("\n=== Checking if seeding is needed ===")
+    user_model = User()
+    
+    existing_users = user_model.get_all()
+    if existing_users and len(existing_users) > 3:
+        print("ℹ️ Database already seeded. Skipping seeding.\n")
+        return  
     
     # 1. Seed Admin (keep your existing logic)
     insert_dummy_admin()
@@ -79,26 +86,79 @@ def insert_dummy_admin():
     print("✅ Dummy admin user created successfully.")
     return user['employee_id']
 
-def seed_employees():
-    """Seed 10 regular employees"""
-    departments = ["IT", "HR", "Finance", "Operations", "Sales"]
-    roles = ["Admin", "Employee"]
+# def seed_employees():
+#     """Seed 10 regular employees"""
+#     departments = ["IT", "HR"]
+#     roles = ["Admin", "Employee"]
     
+#     employees = [
+#         {
+#             "name": f"Employee {i}",
+#             "email": f"employee{i}@example.com",
+#             "phone": f"021{random.randint(1000000, 9999999)}",
+#             "department": random.choice(departments),
+#             "role": random.choice(roles),
+#             "password": "password123"
+#         }
+#         for i in range(1, 5)
+#     ]
+    
+#     user_model = User()
+#     profile_model = EmployeeProfile()
+    
+#     for emp in employees:
+#         if not user_model.get_by_email(emp["email"]):
+#             user_model.add(
+#                 name=emp["name"],
+#                 email=emp["email"],
+#                 phone=emp["phone"],
+#                 department=emp["department"],
+#                 role=emp["role"],
+#                 password_hash=generate_password_hash(emp["password"])
+#             )
+            
+#             user = user_model.get_by_email(emp["email"])
+#             profile_model.create_profile(user['employee_id'], {
+#                 "personal_details": {
+#                     "first_name": emp["name"].split()[0],
+#                     "last_name": emp["name"].split()[1],
+#                     "dob": f"199{random.randint(0,9)}-{random.randint(1,12):02d}-{random.randint(1,28):02d}",
+#                     "gender": random.choice(["Male", "Female", "Other"])
+#                 },
+#                 "contact_details": {
+#                     "address": f"{random.randint(1,999)} {random.choice(['Main', 'Oak', 'Pine'])} St"
+#                 }
+#             })
+    
+#     print(f"✅ Seeded {len(employees)} employees")
+
+def seed_employees():
+    """Seed specific number of HR and IT employees"""
     employees = [
         {
-            "name": f"Employee {i}",
-            "email": f"employee{i}@example.com",
+            "name": f"HR Employee {i}",
+            "email": f"hr_employee{i}@example.com",
             "phone": f"021{random.randint(1000000, 9999999)}",
-            "department": random.choice(departments),
-            "role": random.choice(roles),
+            "department": "HR",
+            "role": "Admin",
             "password": "password123"
         }
-        for i in range(1, 11)
+        for i in range(1, 3)  # 2 HR employees
+    ] + [
+        {
+            "name": f"IT Employee {i}",
+            "email": f"it_employee{i}@example.com",
+            "phone": f"022{random.randint(1000000, 9999999)}",
+            "department": "IT",
+            "role": "Employee",
+            "password": "password123"
+        }
+        for i in range(1, 4)  # 3 IT employees
     ]
-    
+
     user_model = User()
     profile_model = EmployeeProfile()
-    
+
     for emp in employees:
         if not user_model.get_by_email(emp["email"]):
             user_model.add(
@@ -109,21 +169,21 @@ def seed_employees():
                 role=emp["role"],
                 password_hash=generate_password_hash(emp["password"])
             )
-            
+
             user = user_model.get_by_email(emp["email"])
             profile_model.create_profile(user['employee_id'], {
                 "personal_details": {
                     "first_name": emp["name"].split()[0],
                     "last_name": emp["name"].split()[1],
-                    "dob": f"199{random.randint(0,9)}-{random.randint(1,12):02d}-{random.randint(1,28):02d}",
+                    "dob": f"199{random.randint(0, 9)}-{random.randint(1, 12):02d}-{random.randint(1, 28):02d}",
                     "gender": random.choice(["Male", "Female", "Other"])
                 },
                 "contact_details": {
-                    "address": f"{random.randint(1,999)} {random.choice(['Main', 'Oak', 'Pine'])} St"
+                    "address": f"{random.randint(1, 999)} {random.choice(['Main', 'Oak', 'Pine'])} St"
                 }
             })
-    
-    print(f"✅ Seeded {len(employees)} employees")
+
+    print(f"✅ Seeded {len(employees)} employees (2 HR, 3 IT)")
 
 def seed_leaves():
     """Seed leave records"""
@@ -161,7 +221,7 @@ def seed_attendance():
         employees, 
         k=max(1, int(len(employees) * 0.2))
     )
-    
+    approval_toggle = 0
     for emp in employees:
         for day in range(1, 31):  # Last 30 days
             date = (datetime.now() - timedelta(days=day)).strftime('%Y-%m-%d')
@@ -207,10 +267,16 @@ def seed_attendance():
             punch_out = punch_out_dt.isoformat()
             
             status = random.choices(
-                ["On Time", "Late", "Early Departure"],
+                ["On Time", "Late"],
+                weights=[0.7, 0.2]
+            )[0]
+            # approval_status = "Approved" if approval_toggle % 2 == 0 else "Pending"
+            approval_status = random.choices(
+                ["Approved", "Pending", "Rejected"],
                 weights=[0.7, 0.2, 0.1]
             )[0]
-            
+
+            approval_toggle += 1
             attendance_model.manual_request(
                 employee_id=emp['employee_id'],
                 data={
@@ -220,7 +286,8 @@ def seed_attendance():
                     'status': status,
                     'reason': None,
                     'is_manual': 1,
-                    'approval_status': 'Approved' if random.random() < 0.5 else 'Pending'
+                    # 'approval_status': 'Approved' if random.random() < 0.5 else 'Pending'
+                    'approval_status': approval_status
                 }
             )
     
