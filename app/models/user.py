@@ -65,7 +65,7 @@ class User(Database):
     def get_by_employee_id(self, employee_id):
         return self.get_by_field('employee_id', employee_id)
 
-    def update(self, user_id, name, email, phone, department, role, password_hash=None, status=None):
+    def update(self, user_id, name, email, phone, department, role, status=None):
         fields = []
         values = []
 
@@ -89,7 +89,7 @@ class User(Database):
                 tuple(values)
             )
 
-    def delete(self, employee_id):
+    def inactive(self, employee_id):
         with self.conn:
             self.conn.execute(
             'UPDATE users SET status = ?, updated_at = ? WHERE employee_id = ?',
