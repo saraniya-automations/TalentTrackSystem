@@ -35,3 +35,5 @@ Kiwi HRM is a Human Resource Management System developed using Flask, SQLite, an
  ```bash
 Email: admin@example.com
 Password: admin
+
+
