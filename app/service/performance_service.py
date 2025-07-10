@@ -62,11 +62,28 @@ class PerformanceService:
         "total_pages": (total + per_page - 1) // per_page
     }
 
-    def get_rating_distribution(self):
-        return performance_model.get_rating_distribution()
+    def get_rating_distribution(self, page, per_page):
+        items = self.performance_model.get_rating_distribution(page, per_page)
+        total = self.performance_model.get_rating_distribution_count()
+        return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": (total + per_page - 1) // per_page
+    }
 
-    def get_completion_by_department(self):
-        return performance_model.get_completion_by_department()
+    def get_completion_by_department(self, page, per_page):
+        items = self.performance_model.get_completion_by_department(page, per_page)
+        total = self.performance_model.get_completion_by_department_count()
+        return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": (total + per_page - 1) // per_page
+    }
+
 
     def get_submissions_by_employee(self, employee_id, page, per_page):
         submissions = self.performance_model.get_submissions_by_employee(employee_id, page, per_page)
