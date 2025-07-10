@@ -49,10 +49,10 @@ def get_balance():
 def get_my_leaves():
     identity = get_jwt_identity()
     employee_id = identity.get('employee_id')
-    if not employee_id:
-        return jsonify({'error': 'Invalid token: employee_id missing'}), 401
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
 
-    result, code = leave_service.get_user_leave_details(employee_id)
+    result, code = leave_service.get_user_leave_details(employee_id, page, per_page)
     return jsonify(result), code
 
 
@@ -77,24 +77,11 @@ def update_leave_status(leave_id):
 @jwt_required()
 @role_required('Admin')
 def get_pending_leaves():
-    try:
-        page = int(request.args.get('page', 1))
-        per_page = int(request.args.get('per_page', 10))
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
+    result, code = leave_service.get_pending_leaves(page, per_page)
+    return jsonify(result), code
 
-        all_leaves = leave_service.get_pending_leaves()
-        total = len(all_leaves)
-        start = (page - 1) * per_page
-        end = start + per_page
-
-        return jsonify({
-            "items": all_leaves[start:end],
-            "total": total,
-            "page": page,
-            "per_page": per_page,
-            "pages": (total + per_page - 1) // per_page
-        }), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 @leave_bp.route('/leave/search', methods=['GET'])
 @jwt_required()
@@ -103,9 +90,14 @@ def search_employee_leaves():
     name = request.args.get('name')
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
 
     if not name or not start_date or not end_date:
-        return jsonify({'error': 'name, start_date, and end_date are required as query params'}), 400
+        return jsonify({'error': 'name, start_date, and end_date are required'}), 400
 
-    result, code = leave_service.get_employee_leave_details(name, start_date, end_date)
+    result, code = leave_service.get_employee_leave_details(
+        name, start_date, end_date, page, per_page
+    )
     return jsonify(result), code
+

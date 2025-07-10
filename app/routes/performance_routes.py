@@ -45,11 +45,11 @@ def submit_course_completion():
 def view_my_submissions():
     identity = get_jwt_identity()
     employee_id = identity['employee_id']
-    try:
-        submissions = performance_service.get_submissions_by_employee(employee_id)
-        return jsonify(submissions), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
+
+    result = performance_service.get_submissions_by_employee(employee_id, page, per_page)
+    return jsonify(result), 200
 
 
 # 4. Admin views pending course submissions
@@ -57,24 +57,10 @@ def view_my_submissions():
 @jwt_required()
 @role_required("Admin")
 def view_pending_submissions():
-    try:
-        page = int(request.args.get('page', 1))
-        per_page = int(request.args.get('per_page', 10))
-
-        all_submissions = performance_service.get_pending_reviews()
-        total = len(all_submissions)
-        start = (page - 1) * per_page
-        end = start + per_page
-
-        return jsonify({
-            "items": all_submissions[start:end],
-            "total": total,
-            "page": page,
-            "per_page": per_page,
-            "pages": (total + per_page - 1) // per_page
-        }), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
+    result = performance_service.get_pending_reviews(page, per_page)
+    return jsonify(result), 200
 
 
 # 5. Admin reviews (approve/reject) a specific submission
@@ -99,24 +85,10 @@ def review_submission(submission_id):
 @jwt_required()
 @role_required("Admin")
 def view_all_submissions():
-    try:
-        page = int(request.args.get('page', 1))
-        per_page = int(request.args.get('per_page', 10))
-
-        all_submissions = performance_service.get_all_submissions()
-        total = len(all_submissions)
-        start = (page - 1) * per_page
-        end = start + per_page
-
-        return jsonify({
-            "items": all_submissions[start:end],
-            "total": total,
-            "page": page,
-            "per_page": per_page,
-            "pages": (total + per_page - 1) // per_page
-        }), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
+    result = performance_service.get_all_submissions(page, per_page)
+    return jsonify(result), 200
 
 
 # 7. Admin report: Completion rates by department

@@ -3,6 +3,9 @@ from app.models.performance import Performance
 performance_model = Performance()
 
 class PerformanceService:
+    def __init__(self):
+        self.performance_model = Performance()  # ✅ Fix: instantiate model
+
     def get_course_by_department(self, department):
         return performance_model.get_course_by_department(department)
 
@@ -19,8 +22,16 @@ class PerformanceService:
             date=data['completed_at']
         )
 
-    def get_pending_reviews(self):
-        return performance_model.get_pending_submissions()
+    def get_pending_reviews(self, page, per_page):
+        items = self.performance_model.get_pending_submissions(page, per_page)
+        total = self.performance_model.get_pending_submissions_count()
+        return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": (total + per_page - 1) // per_page
+    }
 
     def review_submission(self, submission_id, data, admin_id):
         # Fetch the submission to check who submitted it
@@ -40,8 +51,16 @@ class PerformanceService:
             admin_id=admin_id
         )
 
-    def get_all_submissions(self):
-        return performance_model.get_all_submissions()
+    def get_all_submissions(self, page, per_page):
+        items = self.performance_model.get_all_submissions(page, per_page)
+        total = self.performance_model.get_all_submissions_count()
+        return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": (total + per_page - 1) // per_page
+    }
 
     def get_rating_distribution(self):
         return performance_model.get_rating_distribution()
@@ -49,7 +68,15 @@ class PerformanceService:
     def get_completion_by_department(self):
         return performance_model.get_completion_by_department()
 
-    def get_submissions_by_employee(self, employee_id):
-        return performance_model.get_submissions_by_employee(employee_id)
+    def get_submissions_by_employee(self, employee_id, page, per_page):
+        submissions = self.performance_model.get_submissions_by_employee(employee_id, page, per_page)
+        total = self.performance_model.get_submissions_by_employee_count(employee_id)
+        return {
+            "items": submissions,
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "total_pages": (total + per_page - 1) // per_page
+        }
 
 performance_service = PerformanceService()
