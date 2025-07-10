@@ -145,9 +145,11 @@ def download_payslip():
 @role_required('Admin')
 def get_employee_salary_records(employee_id):
     month = request.args.get('month')
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
 
     if month:
-        record = salary_service.get_salary_by_month(employee_id, month)
+        record = salary_service.get_salary_by_month(employee_id, month,page, per_page)
         return jsonify(record or {"message": "No record found"}), 200
     else:
         records = salary_service.get_all_salary(employee_id)

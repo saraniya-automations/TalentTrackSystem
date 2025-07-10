@@ -132,15 +132,27 @@ def test_get_all_profiles(client):
     print("STATUS:", response.status_code)
     print("RESPONSE:", response.data.decode())
 
+    # data = response.get_json()
+
+    # assert isinstance(data, list), "Expected response to be a list of profiles"
+
+    # for profile in data:
+    #     assert isinstance(profile, dict), "Each profile should be a dictionary"
+    #     assert 'employee_id' in profile
+    #     assert 'name' in profile
+    #     assert 'department' in profile
     data = response.get_json()
+    profiles = data.get("items", [])
 
-    assert isinstance(data, list), "Expected response to be a list of profiles"
+    assert isinstance(profiles, list), f"Expected 'items' to be a list but got: {type(profiles)}"
+    assert len(profiles) > 0, "No profiles returned in 'items'"
 
-    for profile in data:
+    for profile in profiles:
         assert isinstance(profile, dict), "Each profile should be a dictionary"
         assert 'employee_id' in profile
         assert 'name' in profile
         assert 'department' in profile
+
         
 
 def test_get_all_users(client):
@@ -991,18 +1003,33 @@ def test_admin_view_employee_salary_records(client):
         assert "salary_month" in salary_data[0]
     elif isinstance(salary_data, dict):
         # If it's a dict, maybe an error message
-        assert "message" in salary_data
+       assert "items" in salary_data
     else:
         # Unexpected structure
         assert False, "Unexpected salary response format"
 
     # Step 4: View all salary records for that employee
+    # res_all = client.get(
+    #     f'/salary/employee/{emp_id}',
+    #     headers={"Authorization": f"Bearer {token}"}
+    # )
+    # assert res_all.status_code == 200
+    # assert isinstance(res_all.get_json(), list)
     res_all = client.get(
-        f'/salary/employee/{emp_id}',
+        f'/salary/employee/{emp_id}?page=1&per_page=10',
         headers={"Authorization": f"Bearer {token}"}
     )
     assert res_all.status_code == 200
-    # assert isinstance(res_all.get_json(), list)
+
+    salary_response = res_all.get_json()
+    assert "items" in salary_response, "Expected 'items' key in salary response"
+
+    items = salary_response["items"]
+    assert isinstance(items, list), "'items' should be a list"
+
+    if items:
+        assert "salary_month" in items[0], "Each item should contain 'salary_month'"
+
 
 
 def test_export_salary_records_pdf_success(client):
