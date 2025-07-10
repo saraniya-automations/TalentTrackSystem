@@ -55,8 +55,19 @@ def get_users(page=1, per_page=10):
         'total_pages': (total + per_page - 1) // per_page
     }
 
-def search_users(name):
-    return user_model.search(name)
+# def search_users(name):
+#     return user_model.search(name)
+def search_users(name,page=1, per_page=10):
+    users = user_model.search(name,page, per_page)
+    # if you want to get the total count of search results.
+    total = user_model.get_total_search_count(name) 
+    return {
+        'items': users,
+        'total': total,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': (total + per_page - 1) // per_page
+    }
 
 def update_user(employee_id, data):
     user_model.update(

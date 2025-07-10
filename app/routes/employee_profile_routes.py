@@ -46,6 +46,9 @@ def get_all_profiles():
         key = request.args.get('key', '').strip()
         
         profiles = employee_profile_service.get_all_profiles(limit, offset, key)
+
+        # No field removal — return full profile info
         return jsonify(profiles), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500

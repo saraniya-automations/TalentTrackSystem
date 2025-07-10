@@ -45,9 +45,24 @@ class User(Database):
         cursor = self.conn.execute('SELECT COUNT(*) FROM users')
         return cursor.fetchone()[0]
 
-    def search(self, name):
+    def get_total_search_count(self, name):
         search_pattern = f"%{name}%"
-        cursor = self.conn.execute('SELECT * FROM users WHERE name LIKE ?', (search_pattern,))
+        cursor = self.conn.execute('''
+            SELECT COUNT(*) FROM users 
+            WHERE name LIKE ?
+        ''', (search_pattern,))
+        return cursor.fetchone()[0]
+
+    def search(self, name,page,per_page):
+        offset = (page - 1) * per_page
+        search_pattern = f"%{name}%"
+        cursor = self.conn.execute('''
+            SELECT * FROM users 
+            WHERE name LIKE ? 
+            LIMIT ? OFFSET ?
+        ''', (search_pattern, per_page, offset))
+        
+        # cursor = self.conn.execute('SELECT * FROM users WHERE name LIKE ?', (search_pattern,))
         return [dict(row) for row in cursor.fetchall()]
 
     def get_by_field(self, field, value):

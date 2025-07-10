@@ -69,11 +69,15 @@ def get_all_users():
 @role_required("Admin")
 @user_bp.route('/users/search', methods=['GET'])
 def search_user():
+    # Get pagination parameters from query string
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
     name = request.args.get('name', '')
-    users = user_service.search_users(name)
+
+    users = user_service.search_users(name,page, per_page)
     
     # Remove password_hash from each user dict
-    for user in users:
+    for user in users['items']:
         user.pop('password_hash', None)
     
     return jsonify(users)
