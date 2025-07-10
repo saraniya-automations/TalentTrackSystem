@@ -8,7 +8,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from app.models.user import User
 import csv
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 salary_bp = Blueprint('salary', __name__)
 salary_service = SalaryService()
@@ -40,7 +40,7 @@ def view_my_salary():
     month = request.args.get('month')
 
     if month:
-        record = salary_service.get_salary_by_month(employee_id, month)
+        record = salary_service.get_salary_by_month(employee_id, month, page, per_page)
         return jsonify(record or {"message": "No record found"}), 200
     else:
         records = salary_service.get_all_salary(employee_id,page, per_page)
@@ -63,7 +63,7 @@ def download_payslip():
         return jsonify({"message": "Employee not found"}), 404
 
     employee_id = user['employee_id']
-    records = salary_service.get_salary_by_month(employee_id, month)
+    records = salary_service.get_salary_by_month_payslip(employee_id, month)
 
     if not records:
         return jsonify({"message": "No salary record found for the specified month"}), 404
@@ -77,39 +77,53 @@ def download_payslip():
     p.drawString(50, y, f"Payslip for: {user['name']} ({employee_id})")
     y -= 20
 
-    total_basic = 0
-    total_bonus = 0
-    total_deductions = 0
-    total_net = 0
+    # total_basic = 0
+    # total_bonus = 0
+    # total_deductions = 0
+    # total_net = 0
 
-    for i, rec in enumerate(records, start=1):
-        basic = rec['basic_salary']
-        bonus = rec['bonus']
-        deductions = rec['deductions']
-        net = rec['direct_deposit_amount']
+    # for i, rec in enumerate(records, start=1):
+    #     basic = rec['basic_salary']
+    #     bonus = rec['bonus']
+    #     deductions = rec['deductions']
+    #     net = rec['direct_deposit_amount']
 
-        total_basic += basic
-        total_bonus += bonus
-        total_deductions += deductions
-        total_net += net
+    #     total_basic += basic
+    #     total_bonus += bonus
+    #     total_deductions += deductions
+    #     total_net += net
 
-        p.drawString(50, y, f"Entry {i}: {rec['salary_month']} - {rec['pay_frequency']}")
-        y -= 20
-        p.drawString(50, y, f"Basic: {basic} {rec['currency']},")
-        y -= 20
-        p.drawString(50, y, f"Bonus: {bonus} {rec['currency']}, Deductions: {deductions} {rec['currency']}, Net: {net} {rec['currency']}")
-        y -= 30
+    #     p.drawString(50, y, f"Entry {i}: {rec['salary_month']} - {rec['pay_frequency']}")
+    #     y -= 20
+    #     p.drawString(50, y, f"Basic: {basic} {rec['currency']},")
+    #     y -= 20
+    #     p.drawString(50, y, f"Bonus: {bonus} {rec['currency']}, Deductions: {deductions} {rec['currency']}, Net: {net} {rec['currency']}")
+    #     y -= 30
 
-    # Summary
-    p.drawString(50, y, "-" * 45)
+    # # Summary
+    # p.drawString(50, y, "-" * 45)
+    # y -= 20
+    # p.drawString(50, y, f"Total Basic: {total_basic}")
+    # y -= 20
+    # p.drawString(50, y, f"Total Bonus: {total_bonus}")
+    # y -= 20
+    # p.drawString(50, y, f"Total Deductions: {total_deductions}")
+    # y -= 20
+    # p.drawString(50, y, f"Total Net Pay: {total_net}")
+    basic = records['basic_salary']
+    bonus = records['bonus']
+    deductions = records['deductions']
+    net = records['direct_deposit_amount']
+
+    p.drawString(50, y, f"Month: {records['salary_month']} - {records['pay_frequency']}")
     y -= 20
-    p.drawString(50, y, f"Total Basic: {total_basic}")
+    p.drawString(50, y, f"Basic: {basic} {records['currency']}")
     y -= 20
-    p.drawString(50, y, f"Total Bonus: {total_bonus}")
+    p.drawString(50, y, f"Bonus: {bonus} {records['currency']}")
     y -= 20
-    p.drawString(50, y, f"Total Deductions: {total_deductions}")
+    p.drawString(50, y, f"Deductions: {deductions} {records['currency']}")
     y -= 20
-    p.drawString(50, y, f"Total Net Pay: {total_net}")
+    p.drawString(50, y, f"Net Pay: {net} {records['currency']}")
 
     p.showPage()
     p.save()
@@ -209,6 +223,33 @@ def export_salary_records_pdf():
         download_name='salary_records_export.pdf'
     )
 
+# @salary_bp.route('/salary/countdown', methods=['GET'])
+# @jwt_required()
+# def salary_countdown():
+#     identity = get_jwt_identity()
+#     employee_id = identity['employee_id']
+
+#     latest_salary = salary_service.get_latest_salary(employee_id)
+#     if not latest_salary:
+#         return jsonify({"message": "No salary record found"}), 404
+
+#     # Calculate next payday
+#     year, month = map(int, latest_salary['salary_month'].split('-'))
+#     today = datetime.now().date()
+#     payday = datetime(year, month, 1).replace(day=28) + timedelta(days=4)
+#     payday = (payday - timedelta(days=payday.day)).date()  # last day of the month as date
+
+#     days_remaining = (payday - today).days
+
+#     return jsonify({
+#         "next_payday": payday.strftime('%Y-%m-%d'),
+#         "days_remaining": max(days_remaining, 0),
+#         "expected_amount": latest_salary['direct_deposit_amount'],
+#         "pay_frequency": latest_salary['pay_frequency']
+#     }), 200
+
+from calendar import monthrange
+
 @salary_bp.route('/salary/countdown', methods=['GET'])
 @jwt_required()
 def salary_countdown():
@@ -219,11 +260,13 @@ def salary_countdown():
     if not latest_salary:
         return jsonify({"message": "No salary record found"}), 404
 
-    # Calculate next payday
-    year, month = map(int, latest_salary['salary_month'].split('-'))
     today = datetime.now().date()
-    payday = datetime(year, month, 1).replace(day=28) + timedelta(days=4)
-    payday = (payday - timedelta(days=payday.day)).date()  # last day of the month as date
+    year = today.year
+    month = today.month
+
+    # Get last day of current month
+    last_day = monthrange(year, month)[1]
+    payday = date(year, month, last_day)
 
     days_remaining = (payday - today).days
 

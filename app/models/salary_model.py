@@ -17,14 +17,24 @@ class SalaryModel(Database):
                 currency, pay_frequency, direct_deposit_amount
             ))
 
-    def get_salary_by_month(self, employee_id, month):
+    # def get_salary_by_month(self, employee_id, month):
+    #     cur = self.conn.execute('''
+    #         SELECT * FROM payroll_records WHERE employee_id = ? AND salary_month = ?
+    #         ''', (employee_id, month))
+    #     # row = cur.fetchone()
+    #     rows = cur.fetchall()
+    #     return [dict(row) for row in rows]
+    #     # return dict(row) if row else None
+
+    def get_salary_by_month(self, employee_id, month,page, per_page):
+        offset = (page - 1) * per_page
         cur = self.conn.execute('''
             SELECT * FROM payroll_records WHERE employee_id = ? AND salary_month = ?
-            ''', (employee_id, month))
-        # row = cur.fetchone()
+            ORDER BY salary_month DESC
+            LIMIT ? OFFSET ?
+            ''', (employee_id, month, per_page, offset))
         rows = cur.fetchall()
-        return [dict(row) for row in rows]
-        # return dict(row) if row else None
+        return [dict(row) for row in rows] if rows else []
     
     def get_salary_by_month_payslip(self, employee_id, month):
         cur = self.conn.execute('''
