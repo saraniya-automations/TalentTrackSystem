@@ -21,8 +21,17 @@ class SalaryService:
             direct_deposit_amount=direct_deposit_amount
         )
 
-    def get_salary_by_month(self, employee_id, month):
-        return self.salary_model.get_salary_by_month(employee_id, month)
+    def get_salary_by_month(self, employee_id, month,page,per_page):
+        # return self.salary_model.get_salary_by_month(employee_id, month)
+        salaries = self.salary_model.get_salary_by_month(employee_id, month,page, per_page)
+        if not salaries:
+            return []   
+        return {
+            'items': salaries,
+            'total': len(salaries),
+            'page': page,
+            'per_page': per_page,
+        }
     
     def get_salary_by_month_payslip(self, employee_id, month):
         return self.salary_model.get_salary_by_month_payslip(employee_id, month)
