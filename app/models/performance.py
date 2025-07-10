@@ -51,17 +51,39 @@ class Performance(Database):
         ''', (employee_id, department, course_name, note, file_path, date))
         self.conn.commit()
 
-    def get_submissions_by_employee(self, employee_id):
+    def get_submissions_by_employee(self, employee_id, page, per_page):
+        offset = (page - 1) * per_page
         cursor = self.conn.execute('''
-            SELECT * FROM course_submissions WHERE employee_id = ?
-        ''', (employee_id,))
+        SELECT * FROM course_submissions 
+        WHERE employee_id = ?
+        LIMIT ? OFFSET ?
+        ''', (employee_id, per_page, offset))  # ✅ No ORDER BY
         return [dict(row) for row in cursor.fetchall()]
 
-    def get_pending_submissions(self):
+
+    
+    def get_submissions_by_employee_count(self, employee_id):
         cursor = self.conn.execute('''
-            SELECT * FROM course_submissions WHERE status = 'Pending'
-        ''')
+        SELECT COUNT(*) FROM course_submissions WHERE employee_id = ?
+        ''', (employee_id,))
+        return cursor.fetchone()[0]
+
+    def get_pending_submissions(self, page=1, per_page=10):
+        offset = (page - 1) * per_page
+        cursor = self.conn.execute('''
+        SELECT * FROM course_submissions 
+        WHERE status = 'Pending'
+        ORDER BY id DESC
+        LIMIT ? OFFSET ?
+        ''', (per_page, offset))
         return [dict(row) for row in cursor.fetchall()]
+
+    
+    def get_pending_submissions_count(self):
+        cursor = self.conn.execute('''
+        SELECT COUNT(*) FROM course_submissions WHERE status = 'Pending'
+        ''')
+        return cursor.fetchone()[0]
 
     def review_submission(self, submission_id, status, rating, comment, admin_id):
         self.conn.execute('''
@@ -71,20 +93,31 @@ class Performance(Database):
         ''', (status, rating, comment, admin_id, datetime.now().isoformat(), submission_id))
         self.conn.commit()
 
-    def get_all_submissions(self):
-        cursor = self.conn.execute('SELECT * FROM course_submissions')
+    def get_all_submissions(self, page=1, per_page=10):
+        offset = (page - 1) * per_page
+        cursor = self.conn.execute('''
+        SELECT * FROM course_submissions
+        ORDER BY id DESC
+        LIMIT ? OFFSET ?
+        ''', (per_page, offset))
         return [dict(row) for row in cursor.fetchall()]
+    
+    def get_all_submissions_count(self):
+        cursor = self.conn.execute('SELECT COUNT(*) FROM course_submissions')
+        return cursor.fetchone()[0]
 
-    def get_rating_distribution(self):
+    def get_rating_distribution(self, page=1, per_page=10):
+        offset = (page - 1) * per_page
         cursor = self.conn.execute('''
             SELECT rating, COUNT(*) as count FROM course_submissions
             WHERE rating IS NOT NULL GROUP BY rating
-        ''')
+        ''', (per_page, offset))
         return [dict(row) for row in cursor.fetchall()]
 
-    def get_completion_by_department(self):
+    def get_completion_by_department(self, page=1, per_page=10):
+        offset = (page - 1) * per_page
         cursor = self.conn.execute('''
             SELECT department, COUNT(*) as completed FROM course_submissions
             WHERE status = 'Approved' GROUP BY department
-        ''')
+        ''', (per_page, offset))
         return [dict(row) for row in cursor.fetchall()]

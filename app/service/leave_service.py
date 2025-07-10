@@ -62,32 +62,54 @@ class LeaveService:
         self.leave_model.update_status(leave_id, status, approver_id)
         return {"message": f"Leave {status.lower()} successfully."}, 200
 
-    def get_pending_leaves(self):
-        return self.leave_model.get_pending()
+    def get_pending_leaves(self, page, per_page):
+        leaves = self.leave_model.get_pending(page, per_page)
+        total = self.leave_model.get_pending_count()
+        return {
+        "items": leaves,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": (total + per_page - 1) // per_page
+        }, 200
+
     
-    def get_employee_leave_details(self, name, start_date, end_date):
-        if not name or not start_date or not end_date:
-            return {"error": "Name, start date, and end date are required."}, 400
+    def get_employee_leave_details(self, name, start_date, end_date, page, per_page):
         try:
-            # Optionally validate dates
             parse_date(start_date)
             parse_date(end_date)
         except Exception:
             return {"error": "Invalid date format."}, 400
 
-        results = self.leave_model.get_leaves_by_employee_name_and_date(name, start_date, end_date)
-        if not results:
-            return {"message": "No leave records found for given criteria."}, 404
-        return results, 200
+        leaves = self.leave_model.get_leaves_by_employee_name_and_date(
+        name, start_date, end_date, page, per_page
+        )
+        total = self.leave_model.get_leaves_by_employee_name_and_date_count(
+        name, start_date, end_date
+        )
+
+        return {
+        "items": leaves,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": (total + per_page - 1) // per_page
+    }, 200
+
     
-    def get_user_leave_details(self, employee_id):
+    def get_user_leave_details(self, employee_id, page, per_page):
         user = self.user_model.get_by_employee_id(employee_id)
         if not user:
             return {"error": "User not found"}, 404
 
-        results = self.leave_model.get_leaves_by_employee_id(employee_id)
-        if not results:
-            return {"message": "No leave records found for user."}, 404
-        return results, 200
+        leaves = self.leave_model.get_leaves_by_employee_id(employee_id, page, per_page)
+        total = self.leave_model.get_leaves_by_employee_id_count(employee_id)
+        return {
+        "items": leaves,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": (total + per_page - 1) // per_page
+        }, 200
 
 
