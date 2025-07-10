@@ -3,6 +3,8 @@
 ## 📝 Project Overview
 Kiwi HRM is a Human Resource Management System developed using Flask, SQLite, and JWT. The system includes core HR functionalities such as user management, employee profiles, leave management, salary & payroll processing, performance reviews, and attendance tracking. The application ensures secure access for both admins and employees with role-based permissions.
 
+
+
 ## 🛠️ Tech Stack
 - **Backend**: Python (Flask)
 - **Database**: SQLite
@@ -31,9 +33,21 @@ Kiwi HRM is a Human Resource Management System developed using Flask, SQLite, an
    ```bash
    http://localhost:5000
 
-## 🔐 Admin Login Credentials
- ```bash
-Email: admin@example.com
-Password: admin
+### 🔐  Admin Login Credentials:
+- Email: admin@example.com
+- Password: admin
+
+### 🧪 Sample Data
+When the program lauch for the first time seed.py will get automatically get triggered and mock data will be created
+
+### Authors
+Authors: M. Saraniya Sathisvari, Bhagya
+
+
+
+
+
+
+
 
 
