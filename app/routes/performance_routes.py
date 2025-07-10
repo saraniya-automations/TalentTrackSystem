@@ -96,8 +96,10 @@ def view_all_submissions():
 @jwt_required()
 @role_required("Admin")
 def report_completion_rates():
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
     try:
-        report = performance_service.get_completion_by_department()
+        report = performance_service.get_completion_by_department(page, per_page)
         return jsonify(report), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -108,8 +110,10 @@ def report_completion_rates():
 @jwt_required()
 @role_required("Admin")
 def report_ratings_distribution():
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
     try:
-        ratings = performance_service.get_rating_distribution()
+        ratings = performance_service.get_rating_distribution(page, per_page)
         return jsonify(ratings), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -120,8 +124,10 @@ def report_ratings_distribution():
 @jwt_required()
 @role_required("Admin")
 def report_pending_reviews():
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
     try:
-        pending = performance_service.get_pending_reviews()
+        pending = performance_service.get_pending_reviews(page, per_page)
         return jsonify(pending), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

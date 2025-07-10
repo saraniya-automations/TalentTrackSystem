@@ -109,15 +109,39 @@ class Performance(Database):
     def get_rating_distribution(self, page=1, per_page=10):
         offset = (page - 1) * per_page
         cursor = self.conn.execute('''
-            SELECT rating, COUNT(*) as count FROM course_submissions
-            WHERE rating IS NOT NULL GROUP BY rating
+        SELECT rating, COUNT(*) as count
+        FROM course_submissions
+        WHERE rating IS NOT NULL
+        GROUP BY rating
+        LIMIT ? OFFSET ?
         ''', (per_page, offset))
         return [dict(row) for row in cursor.fetchall()]
+
+    def get_rating_distribution_count(self):
+        cursor = self.conn.execute('''
+        SELECT COUNT(DISTINCT rating)
+        FROM course_submissions
+        WHERE rating IS NOT NULL
+        ''')
+        return cursor.fetchone()[0]
+
 
     def get_completion_by_department(self, page=1, per_page=10):
         offset = (page - 1) * per_page
         cursor = self.conn.execute('''
-            SELECT department, COUNT(*) as completed FROM course_submissions
-            WHERE status = 'Approved' GROUP BY department
+        SELECT department, COUNT(*) as completed
+        FROM course_submissions
+        WHERE status = 'Approved'
+        GROUP BY department
+        LIMIT ? OFFSET ?
         ''', (per_page, offset))
         return [dict(row) for row in cursor.fetchall()]
+
+    def get_completion_by_department_count(self):
+        cursor = self.conn.execute('''
+        SELECT COUNT(DISTINCT department)
+        FROM course_submissions
+        WHERE status = 'Approved'
+        ''')
+        return cursor.fetchone()[0]
+
