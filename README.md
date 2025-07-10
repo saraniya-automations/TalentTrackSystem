@@ -20,3 +20,18 @@ Kiwi HRM is a Human Resource Management System developed using Flask, SQLite, an
    ```bash
    git clone https://github.com/yourusername/kiwi-hrm.git](https://github.com/saraniya-automations/TalentTrackSystem.git
    cd kiwi-hrm
+2. Install Dependencies:
+   ```bash
+   pip install -r requirements.txt
+   
+3. Run the application:
+   ```bash
+   python run.py
+4. Access the application at:
+   ```bash
+   http://localhost:5000
+
+##🔐 Admin Login Credentials
+ ```bash
+Email: admin@example.com
+Password: admin
