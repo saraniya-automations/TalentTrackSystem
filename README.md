@@ -1,6 +1,3 @@
-from pathlib import Path
-
-readme_content = """
 # Kiwi HRM System (Backend)
 
 ## 📝 Project Overview
@@ -21,5 +18,5 @@ Kiwi HRM is a Human Resource Management System developed using Flask, SQLite, an
 ### Steps:
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/kiwi-hrm.git
+   git clone https://github.com/yourusername/kiwi-hrm.git](https://github.com/saraniya-automations/TalentTrackSystem.git
    cd kiwi-hrm
