@@ -18,7 +18,26 @@ def get_my_mandatory_course():
     return jsonify({'message': 'No course assigned for this department'}), 404
 
 
-# 2. Employee submits course completion details
+# # 2. Employee submits course completion details
+# @performance_bp.route('/performance/submit', methods=['POST'])
+# @jwt_required()
+# def submit_course_completion():
+#     identity = get_jwt_identity()
+
+#     if identity.get("role") not in ["Employee", "Admin"]:
+#         return jsonify({"error": "Unauthorized role"}), 403
+
+#     data = request.get_json()
+#     if not data:
+#         return jsonify({"error": "No input provided"}), 400
+
+#     try:
+#         employee_id = identity['employee_id']
+#         performance_service.submit_completion(employee_id, data)
+#         return jsonify({'message': 'Course completion submitted successfully'}), 201
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+
 @performance_bp.route('/performance/submit', methods=['POST'])
 @jwt_required()
 def submit_course_completion():
@@ -36,7 +55,10 @@ def submit_course_completion():
         performance_service.submit_completion(employee_id, data)
         return jsonify({'message': 'Course completion submitted successfully'}), 201
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        error_msg = str(e)
+        if "already submitted this course" in error_msg:
+            return jsonify({'error': error_msg}), 409
+        return jsonify({'error': error_msg}), 500
 
 
 # 3. Employee views their own course submission history

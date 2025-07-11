@@ -44,7 +44,7 @@ def add_user():
         return jsonify({'message': 'User created','id':result[0][1]}), 201
     except Exception as e:
         return jsonify(result), 400
-    
+
  
 
 @jwt_required()

@@ -103,4 +103,3 @@ def get_user_id_by_token(token):
 def update_password(employee_id, new_password):
     password_hash = generate_password_hash(new_password)
     user_model.update_password(employee_id, password_hash)
-
