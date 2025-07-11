@@ -18,7 +18,26 @@ def get_my_mandatory_course():
     return jsonify({'message': 'No course assigned for this department'}), 404
 
 
-# 2. Employee submits course completion details
+# # 2. Employee submits course completion details
+# @performance_bp.route('/performance/submit', methods=['POST'])
+# @jwt_required()
+# def submit_course_completion():
+#     identity = get_jwt_identity()
+
+#     if identity.get("role") not in ["Employee", "Admin"]:
+#         return jsonify({"error": "Unauthorized role"}), 403
+
+#     data = request.get_json()
+#     if not data:
+#         return jsonify({"error": "No input provided"}), 400
+
+#     try:
+#         employee_id = identity['employee_id']
+#         performance_service.submit_completion(employee_id, data)
+#         return jsonify({'message': 'Course completion submitted successfully'}), 201
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+
 @performance_bp.route('/performance/submit', methods=['POST'])
 @jwt_required()
 def submit_course_completion():
@@ -36,7 +55,10 @@ def submit_course_completion():
         performance_service.submit_completion(employee_id, data)
         return jsonify({'message': 'Course completion submitted successfully'}), 201
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        error_msg = str(e)
+        if "already submitted this course" in error_msg:
+            return jsonify({'error': error_msg}), 409
+        return jsonify({'error': error_msg}), 500
 
 
 # 3. Employee views their own course submission history
@@ -96,8 +118,10 @@ def view_all_submissions():
 @jwt_required()
 @role_required("Admin")
 def report_completion_rates():
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
     try:
-        report = performance_service.get_completion_by_department()
+        report = performance_service.get_completion_by_department(page, per_page)
         return jsonify(report), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -108,8 +132,10 @@ def report_completion_rates():
 @jwt_required()
 @role_required("Admin")
 def report_ratings_distribution():
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
     try:
-        ratings = performance_service.get_rating_distribution()
+        ratings = performance_service.get_rating_distribution(page, per_page)
         return jsonify(ratings), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -120,8 +146,10 @@ def report_ratings_distribution():
 @jwt_required()
 @role_required("Admin")
 def report_pending_reviews():
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
     try:
-        pending = performance_service.get_pending_reviews()
+        pending = performance_service.get_pending_reviews(page, per_page)
         return jsonify(pending), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

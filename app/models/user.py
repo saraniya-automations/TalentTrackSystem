@@ -23,17 +23,17 @@ class User(Database):
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (employee_id, name, email, phone, department, role, password_hash, status))
 
-           # ✅ Safer: Check if leave balance exists before inserting
-            # balance_exists = self.conn.execute(
-            #     'SELECT 1 FROM leave_balances WHERE employee_id = ?',
-            #     (employee_id,)
-            # ).fetchone()
+        #    # ✅ Safer: Check if leave balance exists before inserting
+        #     balance_exists = self.conn.execute(
+        #         'SELECT 1 FROM leave_balances WHERE employee_id = ?',
+        #         (employee_id,)
+        #     ).fetchone()
 
-            # if not balance_exists:
-            #     self.conn.execute('''
-            #         INSERT INTO leave_balances (employee_id)
-            #         VALUES (?)
-            #     ''', (employee_id,))
+        #     if not balance_exists:
+        #         self.conn.execute('''
+        #             INSERT INTO leave_balances (employee_id)
+        #             VALUES (?)
+        #         ''', (employee_id,))
             
         return cursor.lastrowid, employee_id
 

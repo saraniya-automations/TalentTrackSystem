@@ -24,6 +24,7 @@ from app.routes.performance_routes import performance_bp
 from app.routes.attendance_routes import attendance_bp
 from app.routes.salary_routes import salary_bp 
 from app.routes.admin_dashboard_routes import admin_bp
+from app.routes.employee_dashboard_routes import employee_dashboard_bp
 
 from app.utils.logger import logger
 from app.config import Config
@@ -50,6 +51,7 @@ def create_app(testing=False):
     app.register_blueprint(attendance_bp)
     app.register_blueprint(salary_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(employee_dashboard_bp)
     logger.info("Flask App Initialized.")
 
         # Enable CORS

@@ -42,14 +42,35 @@ class Performance(Database):
             ''', (employee_id, department, course))
             self.conn.commit()
 
+    # def submit_completion(self, employee_id, department, course_name, note, file_path, date):
+    #     self.conn.execute('''
+    #         INSERT INTO course_submissions (
+    #             employee_id, department, course_name, completion_note,
+    #             file_path, completed_at
+    #         ) VALUES (?, ?, ?, ?, ?, ?)
+    #     ''', (employee_id, department, course_name, note, file_path, date))
+    #     self.conn.commit()
+
     def submit_completion(self, employee_id, department, course_name, note, file_path, date):
+    # Check how many times the user has submitted this course
+        cursor = self.conn.execute('''
+            SELECT COUNT(*) as count FROM course_submissions
+            WHERE employee_id = ? AND LOWER(course_name) = LOWER(?)
+        ''', (employee_id, course_name.strip()))
+    
+        result = cursor.fetchone()
+        if result['count'] >= 2:
+            raise Exception("You have already submitted this course. No more submissions allowed.")
+
+    # Proceed to insert new submission
         self.conn.execute('''
             INSERT INTO course_submissions (
                 employee_id, department, course_name, completion_note,
                 file_path, completed_at
             ) VALUES (?, ?, ?, ?, ?, ?)
-        ''', (employee_id, department, course_name, note, file_path, date))
+        ''', (employee_id, department, course_name.strip(), note, file_path, date))
         self.conn.commit()
+
 
     def get_submissions_by_employee(self, employee_id, page, per_page):
         offset = (page - 1) * per_page
@@ -109,15 +130,38 @@ class Performance(Database):
     def get_rating_distribution(self, page=1, per_page=10):
         offset = (page - 1) * per_page
         cursor = self.conn.execute('''
-            SELECT rating, COUNT(*) as count FROM course_submissions
-            WHERE rating IS NOT NULL GROUP BY rating
+        SELECT rating, COUNT(*) as count
+        FROM course_submissions
+        WHERE rating IS NOT NULL
+        GROUP BY rating
+        LIMIT ? OFFSET ?
         ''', (per_page, offset))
         return [dict(row) for row in cursor.fetchall()]
+
+    def get_rating_distribution_count(self):
+        cursor = self.conn.execute('''
+        SELECT COUNT(DISTINCT rating)
+        FROM course_submissions
+        WHERE rating IS NOT NULL
+        ''')
+        return cursor.fetchone()[0]
+
 
     def get_completion_by_department(self, page=1, per_page=10):
         offset = (page - 1) * per_page
         cursor = self.conn.execute('''
-            SELECT department, COUNT(*) as completed FROM course_submissions
-            WHERE status = 'Approved' GROUP BY department
+        SELECT department, COUNT(*) as completed
+        FROM course_submissions
+        WHERE status = 'Approved'
+        GROUP BY department
+        LIMIT ? OFFSET ?
         ''', (per_page, offset))
         return [dict(row) for row in cursor.fetchall()]
+
+    def get_completion_by_department_count(self):
+        cursor = self.conn.execute('''
+        SELECT COUNT(DISTINCT department)
+        FROM course_submissions
+        WHERE status = 'Approved'
+        ''')
+        return cursor.fetchone()[0]
