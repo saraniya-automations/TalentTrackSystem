@@ -152,7 +152,7 @@ class Database:
                 admin_comment TEXT,
                 reviewed_by TEXT,
                 reviewed_at TIMESTAMP,
-                FOREIGN KEY(employee_id) REFERENCES users(employee_id)
+                FOREIGN KEY(employee_id) REFERENCES users(employee_id) ON DELETE CASCADE
             )''')
 
 
