@@ -29,8 +29,10 @@ class LeaveService:
         if leave_days > balance:
             return {"error": f"Insufficient {leave_type} balance"}, 400
 
+        # leave_id = self.leave_model.apply_leave(employee_id, leave_type, start_date, end_date, reason)
+        # self.leave_model.deduct_leave_balance(employee_id, column_name, leave_days)
+
         leave_id = self.leave_model.apply_leave(employee_id, leave_type, start_date, end_date, reason)
-        self.leave_model.deduct_leave_balance(employee_id, column_name, leave_days)
 
         return {"message": "Leave applied successfully", "days": leave_days, "leave_id": leave_id}, 201
 
@@ -58,6 +60,47 @@ class LeaveService:
             return {"error": "Admins cannot approve their own leave"}, 403
         if status not in ["Approved", "Rejected"]:
             return {"error": "Invalid status. Must be Approved or Rejected"}, 400
+        
+        # ── If approving, validate balance and deduct ───────────────────────────
+        if status == "Approved":
+            # 1. Calculate number of days in request (inclusive of both ends)
+            leave_days = len(
+                list(
+                    rrule(
+                        DAILY,
+                        dtstart=parse_date(leave["start_date"]),
+                        until=parse_date(leave["end_date"]),
+                    )
+                )
+            )
+
+            # 2. Map leave type → DB column
+            column_map = {
+                "annual": "annual",
+                "casual": "casual",
+                "sick": "sick",
+                "maternity": "maternity",
+            }
+            column_name = column_map.get(leave["leave_type"].lower())
+            if not column_name:
+                return {"error": f"Unsupported leave type: {leave['leave_type']}"}, 400
+
+            # 3. Check current balance
+            balance = self.leave_model.get_leave_balance(
+                leave["employee_id"], column_name
+            )
+            if balance is None:
+                return {"error": "Leave balance not found"}, 404
+            if leave_days > balance:
+                return {
+                    "error": f"Insufficient {leave['leave_type']} balance "
+                             f"({balance} remaining, {leave_days} requested)"
+                }, 400
+
+            # 4. Deduct
+            self.leave_model.deduct_leave_balance(
+                leave["employee_id"], column_name, leave_days
+            )
 
         self.leave_model.update_status(leave_id, status, approver_id)
         return {"message": f"Leave {status.lower()} successfully."}, 200
