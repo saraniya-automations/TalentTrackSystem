@@ -2631,3 +2631,66 @@
 2025-07-10 21:59:58,399 - INFO - Flask App Initialized.
 2025-07-10 22:12:40,631 - INFO - Flask App Initialized.
 2025-07-10 22:19:51,717 - INFO - Flask App Initialized.
+2025-07-10 22:34:06,984 - INFO - Flask App Initialized.
+2025-07-10 22:34:08,086 - INFO - Flask App Initialized.
+2025-07-10 22:36:06,735 - ERROR - Create user failed due to IntegrityError: UNIQUE constraint failed: leave_balances.employee_id
+2025-07-10 22:44:21,724 - INFO - Flask App Initialized.
+2025-07-10 22:44:24,301 - INFO - Flask App Initialized.
+2025-07-10 22:45:32,485 - ERROR - Create user failed due to IntegrityError: UNIQUE constraint failed: leave_balances.employee_id
+2025-07-10 23:01:42,343 - INFO - Flask App Initialized.
+2025-07-10 23:04:47,553 - INFO - Flask App Initialized.
+2025-07-10 23:05:15,006 - INFO - Flask App Initialized.
+2025-07-10 23:05:17,316 - INFO - Flask App Initialized.
+2025-07-10 23:05:50,334 - ERROR - Create user failed due to IntegrityError: UNIQUE constraint failed: leave_balances.employee_id
+2025-07-10 23:21:28,546 - INFO - Flask App Initialized.
+2025-07-10 23:22:15,884 - INFO - Flask App Initialized.
+2025-07-10 23:22:18,385 - INFO - Flask App Initialized.
+2025-07-10 23:23:43,065 - INFO - Flask App Initialized.
+2025-07-10 23:24:19,850 - INFO - Flask App Initialized.
+2025-07-10 23:24:34,275 - ERROR - Create user failed due to IntegrityError: UNIQUE constraint failed: leave_balances.employee_id
+2025-07-10 23:52:04,118 - INFO - Flask App Initialized.
+2025-07-10 23:55:20,593 - INFO - Flask App Initialized.
+2025-07-10 23:56:26,693 - INFO - Flask App Initialized.
+2025-07-10 23:56:29,000 - INFO - Flask App Initialized.
+2025-07-10 23:56:57,312 - ERROR - IntegrityError on create_user: UNIQUE constraint failed: leave_balances.employee_id
+2025-07-10 23:57:33,461 - INFO - Flask App Initialized.
+2025-07-10 23:58:41,779 - INFO - Flask App Initialized.
+2025-07-11 00:10:25,859 - INFO - Flask App Initialized.
+2025-07-11 00:12:25,083 - INFO - Flask App Initialized.
+2025-07-11 00:12:46,635 - ERROR - IntegrityError on create_user: UNIQUE constraint failed: leave_balances.employee_id
+2025-07-11 00:17:38,178 - INFO - Flask App Initialized.
+2025-07-11 13:43:21,053 - INFO - Flask App Initialized.
+2025-07-11 13:43:22,386 - INFO - Flask App Initialized.
+2025-07-11 14:12:46,671 - INFO - Flask App Initialized.
+2025-07-11 14:12:47,249 - INFO - Flask App Initialized.
+2025-07-11 14:17:16,906 - INFO - Flask App Initialized.
+2025-07-11 14:17:18,274 - INFO - Flask App Initialized.
+2025-07-11 14:32:49,598 - INFO - Flask App Initialized.
+2025-07-11 14:37:17,266 - INFO - Flask App Initialized.
+2025-07-11 14:37:18,661 - INFO - Flask App Initialized.
+2025-07-11 14:48:12,154 - INFO - Flask App Initialized.
+2025-07-11 14:48:13,571 - INFO - Flask App Initialized.
+2025-07-11 15:02:59,809 - INFO - Flask App Initialized.
+2025-07-11 15:03:00,372 - INFO - Flask App Initialized.
+2025-07-11 15:03:05,196 - INFO - Flask App Initialized.
+2025-07-11 15:03:29,164 - INFO - Flask App Initialized.
+2025-07-11 15:03:30,547 - INFO - Flask App Initialized.
+2025-07-11 15:04:08,475 - ERROR - Create user failed: 'Performance' object has no attribute 'assign_course_to_user_if_exists'
+2025-07-11 15:33:55,260 - INFO - Flask App Initialized.
+2025-07-11 15:33:56,640 - INFO - Flask App Initialized.
+2025-07-11 15:34:48,790 - ERROR - Create user failed: 'Performance' object has no attribute 'assign_course_to_user_if_exists'
+2025-07-11 15:48:08,031 - INFO - Flask App Initialized.
+2025-07-11 15:48:50,291 - INFO - Flask App Initialized.
+2025-07-11 15:51:06,838 - INFO - Flask App Initialized.
+2025-07-11 16:00:33,717 - INFO - Flask App Initialized.
+2025-07-11 16:00:35,099 - INFO - Flask App Initialized.
+2025-07-11 16:04:02,573 - INFO - Flask App Initialized.
+2025-07-11 16:12:41,825 - INFO - Flask App Initialized.
+2025-07-11 16:12:43,239 - INFO - Flask App Initialized.
+2025-07-11 16:47:09,921 - INFO - Flask App Initialized.
+2025-07-11 16:47:10,482 - INFO - Flask App Initialized.
+2025-07-11 16:49:48,164 - INFO - Flask App Initialized.
+2025-07-11 16:49:49,481 - INFO - Flask App Initialized.
+2025-07-11 17:05:48,425 - INFO - Flask App Initialized.
+2025-07-11 17:05:49,790 - INFO - Flask App Initialized.
+2025-07-11 17:11:05,485 - INFO - Flask App Initialized.
