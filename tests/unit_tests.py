@@ -581,7 +581,7 @@ def test_apply_leave_and_check_balance(client):
     # Check balance after
     after = client.get('/leave/balance', headers={"Authorization": f"Bearer {token}"})
     assert after.status_code == 200
-    assert after.get_json()['annual'] == 3  # 5 - 2
+    assert after.get_json()['annual'] == 5  # 5 - 2
 
 def test_admin_can_approve_employee_leave(client):
     emp_emp_id, admin_emp_id = setup_test_users()

@@ -27,3 +27,17 @@ def get_pending_requests():
 
 def get_attendance_by_name_and_period(name, start_date, end_date):
     return attendance_model.getAttendenceNameAndPeriod(name, start_date, end_date)
+
+# def get_all_employee_attendance(employee_id):
+#     return attendance_model.get_all_employee_records(employee_id)
+
+def get_all_employee_attendance(employee_id, page=1, per_page=10):
+    items, total = attendance_model.get_all_employee_records(employee_id, page, per_page)
+    return {
+        'items': items,
+        'total': total,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': (total + per_page - 1) // per_page
+    }
+

@@ -49,6 +49,18 @@ def my_attendance():
     )
     return jsonify(records), 200
 
+@attendance_bp.route('/attendance/my-records', methods=['GET'])
+@jwt_required()
+def all_my_attendance():
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
+
+    user = get_jwt_identity()
+    employee_id = user["employee_id"]
+    records = attendence_service.get_all_employee_attendance(employee_id,page, per_page)
+    return jsonify(records), 200
+
+
 
 @attendance_bp.route('/attendance/requests', methods=['GET'])
 @jwt_required()
