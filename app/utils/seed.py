@@ -143,7 +143,7 @@ def seed_employees():
             "role": "Admin",
             "password": "password123"
         }
-        for i in range(1, 3)  # 2 HR employees
+        for i in range(1, 1)  # 2 HR employees
     ] + [
         {
             "name": f"IT Employee {i}",
@@ -153,7 +153,7 @@ def seed_employees():
             "role": "Employee",
             "password": "password123"
         }
-        for i in range(1, 4)  # 3 IT employees
+        for i in range(1, 2)  # 3 IT employees
     ]
 
     user_model = User()
@@ -234,8 +234,8 @@ def seed_attendance():
                     attendance_model.manual_request(
                         employee_id=emp['employee_id'],
                         data={
-                            'punch_in': f"{date}T09:00:00",  # Set default times
-                            'punch_out': f"{date}T17:00:00",
+                            'punch_in': f"09:00",  # Set default times
+                            'punch_out': f"05:00",
                             'date': date,
                             'status': 'Leave',
                             'is_manual': 1,
@@ -280,8 +280,8 @@ def seed_attendance():
             attendance_model.manual_request(
                 employee_id=emp['employee_id'],
                 data={
-                    'punch_in': punch_in,
-                    'punch_out': punch_out,
+                    'punch_in': f'09:30',
+                    'punch_out': f'17:30',
                     'date': date,
                     'status': status,
                     'reason': None,

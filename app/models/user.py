@@ -121,9 +121,21 @@ class User(Database):
         with self.conn:
             self.conn.execute("DELETE FROM users WHERE email = ?", (email,))
 
+    # def hard_delete_by_employee_id(self, employee_id):
+    #     with self.conn:
+    #         self.conn.execute("DELETE FROM users WHERE employee_id = ?", (employee_id,))
     def hard_delete_by_employee_id(self, employee_id):
         with self.conn:
+        # Delete dependent records first
+            self.conn.execute("DELETE FROM attendance WHERE employee_id = ?", (employee_id,))
+            self.conn.execute("DELETE FROM leaves WHERE employee_id = ?", (employee_id,))
+            self.conn.execute("DELETE FROM leave_balances WHERE employee_id = ?", (employee_id,))
+            # self.conn.execute("DELETE FROM performance WHERE employee_id = ?", (employee_id,))
+            # self.conn.execute("DELETE FROM employee_profiles WHERE user_id = ?", (employee_id,))
+
+        # Finally, delete the user
             self.conn.execute("DELETE FROM users WHERE employee_id = ?", (employee_id,))
+
 
 
     # ✅ These were outside the class — moved inside

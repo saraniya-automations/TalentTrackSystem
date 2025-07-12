@@ -102,11 +102,37 @@ class Attendence(Database):
         params = [f"%{name}%", start_date, end_date]
         cursor = self.conn.execute(query, params)
         return [dict(row) for row in cursor.fetchall()]
-
-
-
     
+    def get_all_employee_records(self, employee_id, page=1, per_page=10):
+        cursor = self.conn.execute(
+            '''
+            SELECT * FROM attendance 
+            WHERE employee_id = ? 
+            ORDER BY date DESC 
+            LIMIT ? OFFSET ?
+            ''',
+            (employee_id, per_page, (page - 1) * per_page)
+        )
+        records = [dict(row) for row in cursor.fetchall()]
 
-    
+        # Get the total count for pagination
+        total_cursor = self.conn.execute(
+            '''
+            SELECT COUNT(*) as total FROM attendance 
+            WHERE employee_id = ?
+            ''',
+            (employee_id,)
+        )
+        total = total_cursor.fetchone()["total"]
+
+        return records, total
+
+
+
+
+
+        
+
+        
 
    
