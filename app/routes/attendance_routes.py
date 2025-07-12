@@ -49,7 +49,7 @@ def my_attendance():
     )
     return jsonify(records), 200
 
-@attendance_bp.route('/attendance/my-records', methods=['GET'])
+@attendance_bp.route('/attendance/all-my-records', methods=['GET'])
 @jwt_required()
 def all_my_attendance():
     page = request.args.get('page', default=1, type=int)
@@ -60,30 +60,52 @@ def all_my_attendance():
     records = attendence_service.get_all_employee_attendance(employee_id,page, per_page)
     return jsonify(records), 200
 
-
-
 @attendance_bp.route('/attendance/requests', methods=['GET'])
 @jwt_required()
 @role_required("Admin")
 def get_requests():
-    records = attendence_service.get_pending_requests()
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
+    records = attendence_service.get_pending_requests(page, per_page)
     return jsonify(records), 200
 
 @attendance_bp.route('/attendance/approve/<int:record_id>', methods=['PUT'])
 @jwt_required()
 @role_required("Admin")
 def approve_attendance(record_id):
-    attendence_service.approve_request(record_id)
-    return jsonify({"message": "Attendance request approved"}), 200
+    identity = get_jwt_identity()
+    approver_id = identity.get('employee_id')
+
+    if not approver_id:
+        return jsonify({'error': 'Invalid token: employee_id missing'}), 401
+    
+    try: 
+        res = attendence_service.approve_request(record_id,approver_id)
+        return res
+    except Exception as e:  
+        return jsonify({"error": str(e)}), 400
+    # if not approver_id:
+    #     return jsonify({'error': 'Invalid token: employee_id missing'}), 401
+    # return jsonify({"message": "Attendance request approved"}), 200
 
 @attendance_bp.route('/attendance/reject/<int:record_id>', methods=['PUT'])
 @jwt_required()
 @role_required("Admin")
 def reject_attendance(record_id):
+    identity = get_jwt_identity()
+    approver_id = identity.get('employee_id')
+
+    if not approver_id:
+        return jsonify({'error': 'Invalid token: employee_id missing'}), 401
+    
     data = request.get_json()
-    reason = data.get("rejection_reason", "No reason provided")  # Optional
-    attendence_service.reject_request(record_id, reason)
-    return jsonify({"message": "Attendance request rejected"}), 200
+    reason = data.get("rejection_reason", "No reason provided") 
+    try: 
+        res = attendence_service.reject_request(record_id, reason,approver_id)
+        return res
+    except Exception as e:
+        # return jsonify({"message": "Attendance request rejected"}), 200
+        return jsonify({"error": str(e)}), 400
 
 @attendance_bp.route('/attendance/search', methods=['GET'])
 @jwt_required()
