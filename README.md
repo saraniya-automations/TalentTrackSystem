@@ -41,7 +41,7 @@ Kiwi HRM is a Human Resource Management System developed using Flask, SQLite, an
 When the program lauch for the first time seed.py will get automatically get triggered and mock data will be created
 
 ### Authors
-Authors: M. Saraniya Sathisvari, Bhagya
+Authors: M. Saraniya Sathisvari, Bhagya Hettiarachchi
 
 
 
