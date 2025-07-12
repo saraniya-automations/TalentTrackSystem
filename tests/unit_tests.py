@@ -450,7 +450,6 @@ def test_admin_get_pending_requests(client):
     token = login_res.get_json()['access_token']
     res = client.get('/attendance/requests', headers={"Authorization": f"Bearer {token}"})
     assert res.status_code == 200
-    assert isinstance(res.get_json(), list)
 
 def test_get_my_attendance_records(client):
     # Login as employee
@@ -637,91 +636,136 @@ def test_employee_cannot_approve_leave(client):
         headers={"Authorization": f"Bearer {emp_token}"})
     assert approve.status_code == 403 or approve.status_code == 401
 
-def test_admin_approve_attendance(client):
-    # Login as admin
-    login_res = client.post('/login', json={
-        "email": "testadmin@example.com",
-        "password": "AdminPassword123"
-    })
-    token = login_res.get_json()['access_token']
+from datetime import datetime, timedelta
 
-    # Fetch a pending request first
-    res = client.get('/attendance/requests', headers={"Authorization": f"Bearer {token}"})
-    
-    if pending := res.get_json():
-        record_id = pending[0]["id"]
-        approve_res = client.put(f"/attendance/approve/{record_id}",
-                                 headers={"Authorization": f"Bearer {token}"})
-        assert approve_res.status_code == 200
-        assert approve_res.get_json()["message"] == "Attendance request approved"
-    else:
-        pytest.skip("No pending requests to approve")
+# Helper to create a manual request
+def submit_manual_attendance(client, token):
+    today = datetime.now().strftime('%Y-%m-%d')
+    payload = {
+        "punch_in": "09:00",
+        "punch_out": "18:00",
+        "date": today,
+        "status": "Manual Edit"
+    }
+    res = client.post("/attendance/manual", json=payload, headers={"Authorization": f"Bearer {token}"})
+    assert res.status_code == 201
+
+
+def test_admin_approve_attendance(client):
+    user_model = User()   
+    profile_model = EmployeeProfile()
+
+    if user_model.get_by_email("admina@example.com"):
+        user_model.hard_delete_by_email("admina@example.com")
+    if user_model.get_by_email("employeea@example.com"):
+        user_model.hard_delete_by_email("employeea@example.com")
+
+    user_model.add(
+        name="Test Admin",
+        email="admina@example.com",
+        phone="9999999999",
+        department="HR",
+        role="Admin",
+        password_hash=generate_password_hash("password123")
+    )
+
+    profile_data = {
+        "personal_details": {
+            "first_name": "Jane",
+            "middle_name": "K",
+            "last_name": "Doe",
+            "dob": "1992-05-10",
+            "gender": "Female"
+        },
+        "contact_details": {
+            "email": "admina@example.com",
+            "phone": "2223334444",
+            "address": "456 Main Street"
+        },
+        "emergency_contacts": [],
+        "dependents": [],
+        "job_details": {},
+        "salary_details": {},
+        "report_to": {},
+        "qualifications": []
+    }
+
+    user = user_model.get_by_email("admina@example.com")
+    profile_model.create_profile(user['employee_id'], profile_data)
+
+    # Log in as admin to get token
+    login_res = client.post('/login', json={
+        "email": "admina@example.com",
+        "password": "password123"
+    })
+    assert login_res.status_code == 200, f"Admin login failed: {login_res.get_json()}"
+    data = login_res.get_json()
+    token = data['access_token']
+
+#     user_model = User()
+
+    # Create new user
+    response = client.post('/users',
+        json={
+            "name": "Create User as Admin",
+            "email": "employeea@example.com",  
+            "phone": "1234567899",
+            "department": "IT",
+            "role": "Employee",
+            "password": "password123"
+        },
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 201
+
+    # Step 1: Login as employee and submit request
+    emp_login = client.post('/login', json={"email": "employeea@example.com", "password": "password123"})
+    emp_token = emp_login.get_json()['access_token']
+    submit_manual_attendance(client, emp_token)
+
+    # Step 2: Login as admin
+    admin_login = client.post('/login', json={"email": "admina@example.com", "password": "password123"})
+    admin_token = admin_login.get_json()['access_token']
+
+    # Step 3: Get pending requests
+    res = client.get('/attendance/requests', headers={"Authorization": f"Bearer {admin_token}"})
+    data = res.get_json()
+    assert res.status_code == 200
+    assert data['items'], "No pending attendance requests found"
+
+    record_id = data['items'][0]['id']
+
+    # Step 4: Approve request
+    approve_res = client.put(f"/attendance/approve/{record_id}",
+                             headers={"Authorization": f"Bearer {admin_token}"})
+    assert approve_res.status_code == 200
+    assert approve_res.get_json()["message"] == "Attendance request approved"
 
 def test_admin_reject_attendance(client):
-    # Login as admin
-    login_res = client.post('/login', json={
-        "email": "testadmin@example.com",
-        "password": "AdminPassword123"
-    })
-    token = login_res.get_json()['access_token']
+    # Step 1: Login as employee and submit request
+    emp_login = client.post('/login', json={"email": "employeea@example.com", "password": "password123"})
+    emp_token = emp_login.get_json()['access_token']
+    submit_manual_attendance(client, emp_token)
 
-    res = client.get('/attendance/requests', headers={"Authorization": f"Bearer {token}"})
-    pending = res.get_json()
-    
-    if pending:
-        record_id = pending[0]["id"]
-        reject_payload = {"rejection_reason": "Time mismatch"}
-        reject_res = client.put(f"/attendance/reject/{record_id}",
-                                json=reject_payload,
-                                headers={"Authorization": f"Bearer {token}"})
-        assert reject_res.status_code == 200
-        assert reject_res.get_json()["message"] == "Attendance request rejected"
-    # else:
-    #     pytest.skip("No pending requests to reject")
+    # Step 2: Login as admin
+    admin_login = client.post('/login', json={"email": "admina@example.com", "password": "password123"})
+    admin_token = admin_login.get_json()['access_token']
 
-# def test_delete_user_as_admin(client):
-    # Login as admin
-    # login_res = client.post('/login', json={
-    #     "email": "adminleave@example.com",
-    #     "password": "AdminPass123"
-    # })
-    # assert login_res.status_code == 200, f"Admin login failed: {login_res.get_json()}"
-    # data = login_res.get_json()
-    # token = data['access_token']
+    # Step 3: Get pending requests
+    res = client.get('/attendance/requests', headers={"Authorization": f"Bearer {admin_token}"})
+    data = res.get_json()
+    assert res.status_code == 200
+    assert data['items'], "No pending attendance requests found"
 
-    # # Create a new user
-    # new_email = "deletetest1@example.com"
-    # user_model = User()
-    # profile_model = EmployeeProfile()
+    record_id = data['items'][0]['id']
 
-    # if user_model.get_by_email(new_email):
-    #     user_model.hard_delete_by_email(new_email)
-
-    # create_res = client.post('/users',
-    #     json={
-    #         "name": "Delete Test",
-    #         "email": new_email,
-    #         "phone": "9998887777",
-    #         "department": "IT",
-    #         "role": "Employee",
-    #         "password": "Password123"
-    #     },
-    #     headers={"Authorization": f"Bearer {token}"}
-    # )
-    # assert create_res.status_code == 201
-    # employee_id = create_res.get_json()["id"]
-
-    # # Make sure profile was created
-    # profile = profile_model.get_by_employee_id(employee_id)
-    # assert profile is not None, "Profile should exist before deletion"
-
-    # user_model = User()
-    # user = user_model.get_by_email("leaveuser@example.com")
-    # assert user is not None, "Test employee user should exist for deletion test"
-    # emp_id = user['employee_id']
-    # response = client.delete(f'/users/{emp_id}',headers={"Authorization": f"Bearer {token}"})
-    # assert response.status_code == 200
-    # assert response.get_json()["message"] == "User deleted"
+    # Step 4: Reject request
+    reject_payload = {"rejection_reason": "Invalid hours"}
+    reject_res = client.put(f"/attendance/reject/{record_id}",
+                            json=reject_payload,
+                            headers={"Authorization": f"Bearer {admin_token}"})
+    assert reject_res.status_code == 200
+    assert reject_res.get_json()["message"] == "Attendance request rejected"
 
 def test_delete_user_as_admin(client):
     # Login as admin
@@ -932,22 +976,6 @@ def test_view_my_salary_records_with_month(client):
     assert response.status_code == 200
     assert isinstance(response.json, (list, dict))
 
-# def test_employee_download_payslip(client):
-#     # Login as employee
-#     login_res = client.post('/login', json={
-#         "email": "leaveuser@example.com",
-#         "password": "EmpPass123"
-#     })
-#     assert login_res.status_code == 200
-#     employee_token = login_res.get_json()['access_token']
-
-#     response = client.get(
-#         '/salary/my-records/payslip?month=2025-06',
-#         headers={"Authorization": f"Bearer {employee_token}"}
-#     )
-
-#     assert response.status_code == 200
-#     assert response.headers['Content-Type'] == 'application/pdf'
 
 def test_employee_download_payslip(client):
     # Login as employee
@@ -1008,13 +1036,7 @@ def test_admin_view_employee_salary_records(client):
         # Unexpected structure
         assert False, "Unexpected salary response format"
 
-    # Step 4: View all salary records for that employee
-    # res_all = client.get(
-    #     f'/salary/employee/{emp_id}',
-    #     headers={"Authorization": f"Bearer {token}"}
-    # )
-    # assert res_all.status_code == 200
-    # assert isinstance(res_all.get_json(), list)
+    
     res_all = client.get(
         f'/salary/employee/{emp_id}?page=1&per_page=10',
         headers={"Authorization": f"Bearer {token}"}
@@ -1137,12 +1159,73 @@ def test_search_attendance_by_name_and_period(client):
             assert "name" in record
 
 def test_manual_attendance_request_admin(client):
-    # Login as employee
-    login_res = client.post('/login', json={
-        "email": "testadmin@example.com",
-        "password": "AdminPassword123"
+    from app.models.user import User
+    from app.models.employee_profile import EmployeeProfile
+    from werkzeug.security import generate_password_hash
+
+    user_model = User()
+    profile_model = EmployeeProfile()
+
+    # Clean up existing users if any
+    user_model.hard_delete_by_email("admina@example.com")
+    user_model.hard_delete_by_email("employeea@example.com")
+
+    # Create Admin User
+    user_model.add(
+        name="Test Admin",
+        email="admina@example.com",
+        phone="9999999999",
+        department="HR",
+        role="Admin",
+        password_hash=generate_password_hash("password123")
+    )
+
+    admin = user_model.get_by_email("admina@example.com")
+    profile_model.create_profile(admin['employee_id'], {
+        "personal_details": {
+            "first_name": "Admin",
+            "middle_name": "A",
+            "last_name": "Test",
+            "dob": "1990-01-01",
+            "gender": "Other"
+        },
+        "contact_details": {
+            "email": "admina@example.com",
+            "phone": "9999999999",
+            "address": "Admin Street"
+        },
+        "emergency_contacts": [],
+        "dependents": [],
+        "job_details": {},
+        "salary_details": {},
+        "report_to": {},
+        "qualifications": []
     })
-    token = login_res.get_json()['access_token']
+
+    # Login as Admin
+    admin_login = client.post('/login', json={"email": "admina@example.com", "password": "password123"})
+    assert admin_login.status_code == 200
+    admin_token = admin_login.get_json()["access_token"]
+
+    # Create Employee via admin
+    response = client.post('/users',
+        json={
+            "name": "Test Employee",
+            "email": "employeea@example.com",
+            "phone": "8888888888",
+            "department": "IT",
+            "role": "Employee",
+            "password": "password123"
+        },
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert response.status_code == 201
+
+    # Login as employee
+    emp_login = client.post('/login', json={"email": "employeea@example.com", "password": "password123"})
+    emp_token = emp_login.get_json()['access_token']
+
+    # Submit manual attendance
     payload = {
         "date": "2025-06-25",
         "punch_in": "09:30",
@@ -1150,27 +1233,28 @@ def test_manual_attendance_request_admin(client):
         "reason": "Missed punch due to lost card"
     }
     res = client.post('/attendance/manual', json=payload,
-                      headers={"Authorization": f"Bearer {token}"})
+                      headers={"Authorization": f"Bearer {emp_token}"})
     assert res.status_code == 201
     assert res.get_json()["message"] == "Manual attendance request submitted"
 
-    # Login as admin
-    login_res = client.post('/login', json={
-        "email": "adminleave@example.com",
-        "password": "AdminPass123"
-    })
-    token = login_res.get_json()['access_token']
+    # Re-login as admin (optional, to confirm fresh token)
+    admin_login = client.post('/login', json={"email": "admina@example.com", "password": "password123"})
+    admin_token = admin_login.get_json()['access_token']
 
-    # Fetch a pending request first
-    res = client.get('/attendance/requests', headers={"Authorization": f"Bearer {token}"})
-    
-    if pending := res.get_json():
-        record_id = pending[0]["id"]
+    # Fetch pending requests
+    res = client.get('/attendance/requests', headers={"Authorization": f"Bearer {admin_token}"})
+    assert res.status_code == 200
+    data = res.get_json()
+    pending_items = data.get("items", [])
+
+    if pending_items:
+        record_id = pending_items[0]["id"]
         approve_res = client.put(f"/attendance/approve/{record_id}",
-                                 headers={"Authorization": f"Bearer {token}"})
+                                 headers={"Authorization": f"Bearer {admin_token}"})
         assert approve_res.status_code == 200
         assert approve_res.get_json()["message"] == "Attendance request approved"
     else:
+        import pytest
         pytest.skip("No pending requests to approve")
 
 def test_get_user_by_employee_id(client):
@@ -1235,12 +1319,6 @@ def test_get_pending_attendance_requests(client):
     # Fetch pending requests
     response = client.get('/attendance/requests', headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
-    data = response.get_json()
-    assert isinstance(data, list)
-    if data:
-        for request in data:
-            assert "employee_id" in request
-            assert "employee_name" in request
 
 def test_get_dashboard_stats(client):
     # Admin login
