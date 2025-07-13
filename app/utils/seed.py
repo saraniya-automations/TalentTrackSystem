@@ -82,7 +82,8 @@ def insert_dummy_admin():
 
     user = user_model.get_by_email("admin@example.com")
     profile_model.create_profile(user['employee_id'], profile_data)
-
+    leave_model = Leave()
+    leave_model.insert_leave_balance(user['employee_id'])
     print("✅ Dummy admin user created successfully.")
     return user['employee_id']
 
