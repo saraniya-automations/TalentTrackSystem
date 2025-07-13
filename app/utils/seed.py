@@ -182,6 +182,9 @@ def seed_employees():
                     "address": f"{random.randint(1, 999)} {random.choice(['Main', 'Oak', 'Pine'])} St"
                 }
             })
+             # ✅ Insert leave balance after profile creation
+            leave_model = Leave()
+            leave_model.insert_leave_balance(user['employee_id'])
 
     print(f"✅ Seeded {len(employees)} employees (2 HR, 3 IT)")
 

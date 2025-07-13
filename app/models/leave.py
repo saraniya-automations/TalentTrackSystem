@@ -102,7 +102,7 @@ class Leave(Database):
     def get_leaves_by_employee_id(self, employee_id, page, per_page):
         offset = (page - 1) * per_page
         cursor = self.conn.execute('''
-        SELECT l.leave_type, l.start_date, l.end_date, l.reason, u.name
+        SELECT l.leave_type, l.start_date, l.end_date, l.reason, u.name, l.status
         FROM leaves l
         JOIN users u ON l.employee_id = u.employee_id
         WHERE u.employee_id = ?
@@ -119,5 +119,11 @@ class Leave(Database):
         ''', (employee_id,))
         return cursor.fetchone()[0]
 
+    def insert_leave_balance(self, employee_id):
+        self.conn.execute('''
+            INSERT OR IGNORE INTO leave_balances (employee_id)
+            VALUES (?)
+        ''', (employee_id,))
+        self.conn.commit()
 
 

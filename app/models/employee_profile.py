@@ -138,6 +138,7 @@ class EmployeeProfile(Database):
         self.conn.commit()
 
     def get_all(self, limit, offset, key=''):
+        key = key.strip().lower() 
         query = '''
             SELECT ep.*, u.employee_id, u.name, u.department, u.role FROM employee_profiles ep
             JOIN users u ON ep.user_id = u.employee_id
