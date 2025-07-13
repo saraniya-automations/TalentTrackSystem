@@ -137,23 +137,54 @@ class EmployeeProfile(Database):
         ))
         self.conn.commit()
 
-    def get_all(self, limit, offset, key=''):
-        key = key.strip().lower() 
-        query = '''
-            SELECT ep.*, u.employee_id, u.name, u.department, u.role FROM employee_profiles ep
-            JOIN users u ON ep.user_id = u.employee_id
-        '''
-        params = []
+    # def get_all(self, limit, offset, key=''):
+    #     key = key.strip().lower() 
+    #     query = '''
+    #         SELECT ep.*, u.employee_id, u.name, u.department, u.role 
+    #         FROM employee_profiles ep
+    #         JOIN users u ON ep.user_id = u.employee_id
+    #     '''
+    #     params = []
         
+    #     if key:
+    #         # query += ' WHERE u.name LIKE ?'
+    #         query += ' WHERE LOWER(u.name) LIKE ?'
+    #         params.append(f'%{key}%')
+        
+    #     query += ' LIMIT ? OFFSET ?'
+    #     params.extend([limit, offset])
+        
+    #     cursor = self.conn.execute(query, tuple(params))
+    #     return [dict(row) for row in cursor.fetchall()]
+    def get_all(self, limit, page=1, key=''):
+        key = key.strip().lower()
+        offset = (page - 1) * limit
         if key:
-            query += ' WHERE u.name LIKE ?'
-            params.append(f'%{key}%')
+            search_key = f'%{key}%'
+            query = '''
+                SELECT ep.*, u.employee_id, u.name, u.department, u.role
+                FROM employee_profiles ep
+                JOIN users u ON ep.user_id = u.employee_id
+                WHERE LOWER(u.name) LIKE ?
+                ORDER BY u.name ASC
+                LIMIT ? OFFSET ?
+            '''
+            params = (search_key, limit, offset)
+        else:
+            query = '''
+                SELECT ep.*, u.employee_id, u.name, u.department, u.role
+                FROM employee_profiles ep
+                JOIN users u ON ep.user_id = u.employee_id
+                ORDER BY u.name ASC
+                LIMIT ? OFFSET ?
+            '''
+            params = (limit, offset)
         
-        query += ' LIMIT ? OFFSET ?'
-        params.extend([limit, offset])
-        
-        cursor = self.conn.execute(query, tuple(params))
+        cursor = self.conn.execute(query, params)
         return [dict(row) for row in cursor.fetchall()]
+
+
+
     
     def get_total_profile_count(self):
         cursor = self.conn.execute('SELECT COUNT(*) FROM employee_profiles')
