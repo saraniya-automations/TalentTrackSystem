@@ -183,8 +183,6 @@ class EmployeeProfile(Database):
         cursor = self.conn.execute(query, params)
         return [dict(row) for row in cursor.fetchall()]
 
-
-
     
     def get_total_profile_count(self):
         cursor = self.conn.execute('SELECT COUNT(*) FROM employee_profiles')
