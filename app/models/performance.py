@@ -165,3 +165,13 @@ class Performance(Database):
         WHERE status = 'Approved'
         ''')
         return cursor.fetchone()[0]
+    
+    def has_already_submitted_course(self, employee_id, course_name):
+        cursor = self.conn.execute('''
+            SELECT status FROM course_submissions
+            WHERE employee_id = ? AND LOWER(course_name) = LOWER(?)
+            ORDER BY id DESC LIMIT 1
+        ''', (employee_id, course_name.strip()))
+        
+        result = cursor.fetchone()
+        return result['status'] if result else None

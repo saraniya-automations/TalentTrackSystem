@@ -12,7 +12,7 @@ def get_profile_by_employee_id(employee_id):
 def update_profile(user_id, data):
     profile_model.update_profile(user_id, data)
 
-def get_all_profiles(limit=50, offset=0,key=''):
+def get_all_profiles(limit=50, offset=1,key=''):
     profiles = profile_model.get_all(limit, offset,key)
     total = profile_model.get_total_profile_count()
     return {

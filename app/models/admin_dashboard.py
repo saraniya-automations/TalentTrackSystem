@@ -21,7 +21,7 @@ class AdminDashboard(Database):
     def get_employees_on_leave_today(self):
         cur = self.conn.execute('''
             SELECT COUNT(*) as total FROM attendance 
-            WHERE status = 'Leave' AND date = DATE('now')
+            WHERE date = DATE('now')
         ''')
         return cur.fetchone()['total']
     
@@ -172,7 +172,24 @@ class AdminDashboard(Database):
             SELECT department, COUNT(*) as count 
             FROM users 
             WHERE status = 'Active' 
-            AND role != 'Admin'
             GROUP BY department
         ''')
         return {row['department']: row['count'] for row in cur.fetchall()}
+    
+    def get_present_employees_this_week(self):
+        try:
+            cur = self.conn.execute('''
+                SELECT *
+                FROM attendance
+                WHERE date >= date('now', '-6 days')
+            ''')
+            rows = [dict(row) for row in cur.fetchall()]
+            for row in rows:
+                print(row)
+            return rows
+        except Exception as e:
+            print(f"Error fetching attendance debug data: {str(e)}")
+            return []
+        
+
+        

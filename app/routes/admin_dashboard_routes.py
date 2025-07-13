@@ -19,7 +19,7 @@ def get_dashboard_stats():
 def get_weekly_attendance_chart():
     department = request.args.get('department')  
     service = AdminDashboardService()
-    data = service.get_weekly_attendance_for_chart(department=department)
+    data = service.get_weekly_attendance_for_chart(department)
     return jsonify(data), 200
 
 @admin_bp.route('/dashboard/employee-growth', methods=['GET'])
